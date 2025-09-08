@@ -7,11 +7,13 @@ const {
   updateTransaction,
   deleteTransaction,
   getCategories,
+  uploadReceipt,
   getSummary, // <-- IMPORT ADDED
 } = require('../controllers/transactionController');
 
 const { validateTransaction, checkValidation } = require('../middleware/validation');
 const { protect } = require('../middleware/auth');
+const upload = require('../middleware/uploads.jsx');
 
 const router = express.Router();
 
@@ -22,6 +24,8 @@ router.use(protect);
 // THESE ROUTES MUST BE BEFORE /:id
 router.route('/categories').get(getCategories);
 router.route('/summary').get(getSummary); // <-- ROUTE ADDED
+
+router.route('/upload-receipt').post(upload, uploadReceipt); 
 
 router
   .route('/')
