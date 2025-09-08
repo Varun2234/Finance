@@ -1,33 +1,41 @@
-import express, { json } from 'express';
-import { connect } from 'mongoose';
-import cors from 'cors';
-require('dotenv').config();
+// Main entry point for the Express server
 
-// Import routes
-import authRoutes from './routes/authRoutes';
-import transactionRoutes from './routes/transactionRoutes';
+// Import necessary packages
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const connectDB = require('./config/database');
+const authRoutes = require('./routes/auth');
+const transactionRoutes = require('./routes/transactions');
+const errorHandler = require('./middleware/errorHandler');
 
+// Load environment variables from .env file
+dotenv.config();
+
+// Connect to the database
+connectDB();
+
+// Initialize the Express app
 const app = express();
 
-// Middleware
+// Middleware setup
+// Enable Cross-Origin Resource Sharing (CORS)
 app.use(cors());
-app.use(json());
-// app.use('/uploads');
+// Parse incoming JSON requests
+app.use(express.json());
 
-// MongoDB connection
-connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/personal-finance', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
-app.use('/api/categories', transactionRoutes);
 
+// Use the custom error handler middleware
+// This should be the last middleware
+app.use(errorHandler);
+
+// Define the port for the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
 
-export default app;
+// Start the server and listen for incoming requests
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

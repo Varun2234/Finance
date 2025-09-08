@@ -1,27 +1,37 @@
-import { verify } from 'jsonwebtoken';
-import User from '../models/user';
+// Middleware to verify the JSON Web Token (JWT) and protect routes
 
-const authenticateToken = async (req, res, next) => {
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');
+
+exports.protect = async (req, res, next) => {
+  let token;
+
+  // Check for token in the Authorization header
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  } 
+  // Or check for token in cookies
+  // else if (req.cookies.token) {
+  //   token = req.cookies.token;
+  // }
+
+  // Make sure token exists
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'Not authorized to access this route' });
+  }
+
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!token) {
-      return res.status(401).json({ message: 'Access token required' });
-    }
+    // Attach user to the request object
+    req.user = await User.findById(decoded.id);
 
-    const decoded = verify(token, process.env.JWT_SECRET || 'your-jwt-secret-key');
-    const user = await User.findById(decoded.userId).select('-password');
-    
-    if (!user) {
-      return res.status(403).json({ message: 'Invalid token' });
-    }
-
-    req.user = user;
     next();
-  } catch (error) {
-    return res.status(403).json({ message: 'Invalid token' });
+  } catch (err) {
+    return res.status(401).json({ success: false, error: 'Not authorized to access this route' });
   }
 };
-
-export default { authenticateToken };

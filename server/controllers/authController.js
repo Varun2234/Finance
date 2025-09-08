@@ -1,116 +1,101 @@
-import { hash, compare } from 'bcrypt';
-import { sign } from 'jsonwebtoken';
-import User from "../models/user";
+// Handles the logic for user authentication (registration, login)
 
-const register = async (req, res) => {
+const User = require('../models/user');
+const jwt = require('jsonwebtoken');
+
+// @desc    Register a new user
+// @route   POST /api/auth/register
+// @access  Public
+exports.register = async (req, res, next) => {
   try {
-    const { username, email, password } = req.body;
-
-    // Validation
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
-    }
-
-    // Check if user exists
-    const existingUser = await User.findOne({ 
-      $or: [{ email }, { username }] 
-    });
-    
-    if (existingUser) {
-      return res.status(400).json({ 
-        message: existingUser.email === email ? 'Email already exists' : 'Username already exists'
-      });
-    }
-
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await hash(password, saltRounds);
+    const { name, email, password } = req.body;
 
     // Create user
-    const user = new User({
-      username: username.trim(),
-      email: email.trim().toLowerCase(),
-      password: hashedPassword
+    const user = await User.create({
+      name,
+      email,
+      password,
     });
 
-    await user.save();
-
-    // Generate JWT
-    const token = sign(
-      { userId: user._id, username: user.username },
-      process.env.JWT_SECRET || 'your-jwt-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    res.status(201).json({
-      message: 'User created successfully',
-      token,
-      user: { 
-        id: user._id, 
-        username: user.username, 
-        email: user.email 
-      }
-    });
+    sendTokenResponse(user, 201, res);
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ 
-      message: 'Error creating user', 
-      error: error.message 
-    });
+    next(error);
   }
 };
 
-const login = async (req, res) => {
+// @desc    Login user
+// @route   POST /api/auth/login
+// @access  Public
+exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
+    // Validate email & password
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+      return res.status(400).json({ success: false, error: 'Please provide an email and password' });
     }
 
-    // Find user
-    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    // Check for user
+    const user = await User.findOne({ email }).select('+password');
+
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
-    // Check password
-    const isPasswordValid = await compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+    // Check if password matches
+    const isMatch = await user.matchPassword(password);
+
+    if (!isMatch) {
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
-    // Generate JWT
-    const token = sign(
-      { userId: user._id, username: user.username },
-      process.env.JWT_SECRET || 'your-jwt-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    res.json({
-      message: 'Login successful',
-      token,
-      user: { 
-        id: user._id, 
-        username: user.username, 
-        email: user.email 
-      }
-    });
+    sendTokenResponse(user, 200, res);
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ 
-      message: 'Error logging in', 
-      error: error.message 
-    });
+    next(error);
   }
 };
 
-export default {
-  register,
-  login
+// @desc    Get current logged in user
+// @route   GET /api/auth/me
+// @access  Private
+exports.getMe = async (req, res, next) => {
+  try {
+    // req.user is set by the auth middleware
+    const user = await User.findById(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// Helper function to create JWT, set cookie, and send response
+const sendTokenResponse = (user, statusCode, res) => {
+  // Create token
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE,
+  });
+
+  const options = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+  };
+
+  // Secure cookie in production
+  if (process.env.NODE_ENV === 'production') {
+    options.secure = true;
+  }
+
+  res.status(statusCode)
+    .cookie('token', token, options)
+    .json({
+      success: true,
+      token,
+    });
 };

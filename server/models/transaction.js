@@ -1,46 +1,31 @@
-import { Schema, model } from 'mongoose';
+// Defines the schema for the Transaction model
 
-const transactionSchema = new Schema({
-  userId: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
-  },
-  type: { 
-    type: String, 
-    enum: ['income', 'expense'], 
-    required: true 
-  },
-  amount: { 
-    type: Number, 
+const mongoose = require('mongoose');
+
+const TransactionSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User', // Reference to the User model
     required: true,
-    min: 0.01
   },
-  category: { 
-    type: String, 
-    required: true,
-    trim: true
+  type: {
+    type: String,
+    enum: ['income', 'expense'], // Type must be either 'income' or 'expense'
+    required: [true, 'Please specify a transaction type (income/expense)'],
   },
-  description: { 
-    type: String, 
-    required: true,
-    trim: true
+  amount: {
+    type: Number,
+    required: [true, 'Please add a positive or negative number'],
   },
-  date: { 
-    type: Date, 
-    required: true 
+  description: {
+    type: String,
+    trim: true,
+    required: [true, 'Please add some text'],
   },
-  receiptUrl: { 
-    type: String 
+  date: {
+    type: Date,
+    default: Date.now,
   },
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
-  }
 });
 
-// Index for better query performance
-transactionSchema.index({ userId: 1, date: -1 });
-transactionSchema.index({ userId: 1, type: 1 });
-
-export default model('Transaction', transactionSchema);
+module.exports = mongoose.model('Transaction', TransactionSchema);
