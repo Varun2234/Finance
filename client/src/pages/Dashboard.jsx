@@ -106,7 +106,7 @@ export default function Dashboard() {
             color="success"
           />
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid  xs={12} md={4}>
           <StatCard 
             title="Total Expense"
             value={formatCurrency(summary.totalExpense)}
@@ -114,7 +114,7 @@ export default function Dashboard() {
             color="error"
           />
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid  xs={12} md={4}>
           <StatCard 
             title="Net Balance"
             value={formatCurrency(summary.netIncome)}
@@ -126,7 +126,7 @@ export default function Dashboard() {
 
       {/* Expense Categories Breakdown */}
       <Grid container spacing={3}>
-        <Grid item xs={12}>
+        <Grid  xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="h2" gutterBottom>

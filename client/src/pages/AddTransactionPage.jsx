@@ -23,7 +23,7 @@ import {
 // MUI Icons
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
-// 1. Define the validation schema based on backend requirements [cite: varun2234/finance/Finance-7240244dece15617cb5fc14f90da48e7e82bdafe/server/controllers/transactionController.js]
+// 1. Define the validation schema based on backend requirements
 const validationSchema = yup.object({
   type: yup.string().oneOf(['income', 'expense']).required('Type is required'),
   amount: yup.number().typeError('Amount must be a number').positive('Amount must be positive').required('Amount is required'),
@@ -61,10 +61,10 @@ const AddTransactionPage = () => {
     const fetchCategories = async () => {
       try {
         const { data } = await api.get('/api/transactions/categories');
-        setCategories(data);
+        setCategories(data.data); // <-- MODIFIED
         // Set default category in the form if categories are fetched
-        if (data.length > 0) {
-          reset(formValues => ({ ...formValues, category: data[0] }));
+        if (data.data.length > 0) { // <-- MODIFIED
+          reset(formValues => ({ ...formValues, category: data.data[0] })); // <-- MODIFIED
         }
       } catch (error) {
         console.error('Error fetching categories:', error);

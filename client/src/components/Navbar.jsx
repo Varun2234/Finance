@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import { shallow } from 'zustand/shallow'; // <-- 1. IMPORT shallow
+// import { shallow } from 'zustand/shallow'; // <-- 1. IMPORT shallow
 
 // MUI Components
 import {
@@ -37,14 +37,9 @@ const Navbar = () => {
 
   // 2. USE shallow as the second argument to the hook.
   // This prevents re-renders if the selected state values haven't changed.
-  const { user, token, logout } = useAuthStore(
-    (state) => ({
-      user: state.user,
-      token: state.token,
-      logout: state.logout,
-    }),
-    shallow
-  );
+  const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
+  const logout = useAuthStore((state) => state.logout);
 
   const isAuthenticated = !!token;
 

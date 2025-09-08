@@ -45,12 +45,12 @@ const TransactionsPage = () => {
 
         // Fetch transactions
         const transactionsResponse = await api.get('/api/transactions');
-        setTransactions(transactionsResponse.data);
-        setFilteredTransactions(transactionsResponse.data);
+        setTransactions(transactionsResponse.data.data); // <-- MODIFIED
+        setFilteredTransactions(transactionsResponse.data.data); // <-- MODIFIED
 
         // Fetch categories
         const categoriesResponse = await api.get('/api/transactions/categories');
-        setCategories(categoriesResponse.data);
+        setCategories(categoriesResponse.data.data); // <-- MODIFIED
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load transactions. Please try again.');

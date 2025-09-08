@@ -21,7 +21,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 // Define the validation schema based on backend requirements
 const validationSchema = yup.object({
-  username: yup
+  name: yup
     .string()
     .required('Username is required')
     .min(3, 'Username must be at least 3 characters'),
@@ -51,7 +51,7 @@ const SignupPage = () => {
   } = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
-      username: '',
+      name: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -100,21 +100,21 @@ const SignupPage = () => {
         
         <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 3 }}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <Controller
-                name="username"
+                name="name" // <-- CHANGED
                 control={control}
                 render={({ field }) => (
                   <TextField
                     {...field}
                     required
                     fullWidth
-                    id="username"
-                    label="Username"
-                    autoComplete="username"
+                    id="name" // <-- CHANGED
+                    label="Name" // <-- CHANGED
+                    autoComplete="name" // <-- CHANGED
                     autoFocus
-                    error={!!errors.username}
-                    helperText={errors.username?.message}
+                    error={!!errors.name} // <-- CHANGED
+                    helperText={errors.name?.message} // <-- CHANGED
                   />
                 )}
               />
