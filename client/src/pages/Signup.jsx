@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import api from '../services/api';
 
 // MUI Components
 import { 
@@ -13,12 +14,12 @@ import {
   Typography, 
   Avatar, 
   CircularProgress,
-  Grid
+  Grid,
+  Alert
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
-// 1. Define the validation schema based on backend requirements
-// Your backend requires username, email, and password (min 6 chars).
+// Define the validation schema based on backend requirements
 const validationSchema = yup.object({
   username: yup
     .string()
@@ -39,10 +40,10 @@ const validationSchema = yup.object({
 });
 
 const SignupPage = () => {
-  const [serverError, setServerError] = useState(''); // For errors from the API
+  const [serverError, setServerError] = useState('');
+  const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
-  // 2. Setup react-hook-form
   const { 
     control, 
     handleSubmit, 
@@ -57,20 +58,27 @@ const SignupPage = () => {
     },
   });
 
-  /**
-   * 3. Submit handler declaration (implementation ignored as requested)
-   * In a real implementation, you would:
-   * 1. Call api.post('/api/auth/register', data)
-   * 2. On success, perhaps automatically log the user in or navigate to the login page.
-   * 3. On error, setServerError(err.response.data.message)
-   */
   const onSubmit = async (data) => {
-    console.log("Form data submitted:", data);
     setServerError('');
-    // API call logic would go here, but is ignored per your request.
+    setSuccess('');
     
-    // Example of success navigation (after a successful API call)
-    // navigate('/login'); 
+    try {
+      // Remove confirmPassword from the data sent to backend
+      const { confirmPassword, ...registrationData } = data;
+      
+      const response = await api.post('/api/auth/register', registrationData);
+      
+      setSuccess('Registration successful! Redirecting to login...');
+      
+      // Redirect to login page after successful registration
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+      
+    } catch (err) {
+      console.error('Registration error:', err);
+      setServerError(err.response?.data?.message || 'Registration failed. Please try again.');
+    }
   };
 
   return (
@@ -171,11 +179,18 @@ const SignupPage = () => {
             </Grid>
           </Grid>
 
+          {/* Display Success Message */}
+          {success && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              {success}
+            </Alert>
+          )}
+
           {/* Display API/Server Errors */}
           {serverError && (
-            <Typography color="error" variant="body2" align="center" sx={{ mt: 2 }}>
+            <Alert severity="error" sx={{ mt: 2 }}>
               {serverError}
-            </Typography>
+            </Alert>
           )}
 
           <Button
