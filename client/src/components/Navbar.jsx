@@ -41,7 +41,7 @@ const Navbar = () => {
   const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
 
-  const isAuthenticated = !!token;
+  const isAuthenticated = token;
 
   const handleLogout = () => {
     logout();
@@ -56,7 +56,7 @@ const Navbar = () => {
           MyFinance
         </Typography>
 
-        {isAuthenticated && user ? (
+        {isAuthenticated ? (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box sx={{ display: { xs: 'none', md: 'flex' }, mr: 3 }}>
               <Button sx={navLinkStyle} component={NavLink} to="/dashboard">
@@ -72,9 +72,13 @@ const Navbar = () => {
                 Analytics
               </Button>
             </Box>
+            
+            {/* *** THIS IS THE UPDATED LINE *** */}
             <Typography sx={{ display: { xs: 'none', sm: 'block' }, mr: 1.5 }}>
-              Hello, {user.username}
+              Hello, {user.name}
             </Typography>
+            {/* *** END OF UPDATE *** */}
+
             <Avatar sx={{ bgcolor: 'secondary.main', width: 36, height: 36, mr: 1.5 }}>
               <AccountCircle />
             </Avatar>

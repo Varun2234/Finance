@@ -91,11 +91,21 @@ const sendTokenResponse = (user, statusCode, res) => {
   if (process.env.NODE_ENV === 'production') {
     options.secure = true;
   }
+  
+  // *** UPDATED SECTION STARTS HERE ***
+  // Create a user payload to send back (password is removed by schema 'select: false')
+  const userPayload = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+  };
 
   res.status(statusCode)
     .cookie('token', token, options)
     .json({
       success: true,
       token,
+      user: userPayload // <-- ADDED THIS LINE
     });
+  // *** UPDATED SECTION ENDS HERE ***
 };
