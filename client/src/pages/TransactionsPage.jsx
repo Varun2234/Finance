@@ -22,6 +22,17 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 
+// *** MODIFICATION: Define the static category list ***
+const categories = [
+  "Rent", 
+  "Electricity", 
+  "Groceries", 
+  "Personal Care", 
+  "Health Insurance", 
+  "Loan", 
+  "Others"
+];
+
 const TransactionsPage = () => {
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -34,7 +45,7 @@ const TransactionsPage = () => {
     sortBy: 'date',
     sortOrder: 'desc'
   });
-  const [categories, setCategories] = useState([]);
+  // *** MODIFICATION: Removed useState for categories ***
 
   // Fetch transactions and categories on component mount
   useEffect(() => {
@@ -45,12 +56,11 @@ const TransactionsPage = () => {
 
         // Fetch transactions
         const transactionsResponse = await api.get('/api/transactions');
-        setTransactions(transactionsResponse.data.data); // <-- MODIFIED
-        setFilteredTransactions(transactionsResponse.data.data); // <-- MODIFIED
+        setTransactions(transactionsResponse.data.data);
+        setFilteredTransactions(transactionsResponse.data.data); 
 
-        // Fetch categories
-        const categoriesResponse = await api.get('/api/transactions/categories');
-        setCategories(categoriesResponse.data.data); // <-- MODIFIED
+        // *** MODIFICATION: Removed categories fetch ***
+
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load transactions. Please try again.');
@@ -202,6 +212,7 @@ const TransactionsPage = () => {
             size="small"
           >
             <MenuItem value="all">All Categories</MenuItem>
+            {/* *** MODIFICATION: Mapped over static list *** */}
             {categories.map(category => (
               <MenuItem key={category} value={category}>{category}</MenuItem>
             ))}

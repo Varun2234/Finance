@@ -53,7 +53,7 @@ export default function Dashboard() {
     const fetchSummary = async () => {
       try {
         setLoading(true);
-        // This endpoint is defined in your transactionController.js [cite: varun2234/finance/Finance-7240244dece15617cb5fc14f90da48e7e82bdafe/server/controllers/transactionController.js]
+        // This endpoint is defined in your transactionController.js
         const res = await api.get("/api/transactions/summary");
         const data = res.data;
 
@@ -62,10 +62,13 @@ export default function Dashboard() {
         const totalExpense = data.summary?.find((s) => s._id === "expense")?.total || 0;
 
         // Convert the "categoryBreakdown" array into a more usable object
-        const expenseCategories = data.categoryBreakdown?.reduce((acc, c) => {
-          acc[c._id] = c.total;
-          return acc;
-        }, {}) || {};
+        // Filter out null, undefined, or empty categories
+        const expenseCategories = data.categoryBreakdown
+          ?.filter(c => c._id && c._id.trim() !== '') // Remove null, undefined, or empty categories
+          ?.reduce((acc, c) => {
+            acc[c._id] = c.total;
+            return acc;
+          }, {}) || {};
 
         setSummary({
           totalIncome,
@@ -106,7 +109,7 @@ export default function Dashboard() {
             color="success"
           />
         </Grid>
-        <Grid  xs={12} md={4}>
+        <Grid item xs={12} md={4}>
           <StatCard 
             title="Total Expense"
             value={formatCurrency(summary.totalExpense)}
@@ -114,7 +117,7 @@ export default function Dashboard() {
             color="error"
           />
         </Grid>
-        <Grid  xs={12} md={4}>
+        <Grid item xs={12} md={4}>
           <StatCard 
             title="Net Balance"
             value={formatCurrency(summary.netIncome)}
@@ -126,7 +129,7 @@ export default function Dashboard() {
 
       {/* Expense Categories Breakdown */}
       <Grid container spacing={3}>
-        <Grid  xs={12}>
+        <Grid item xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" component="h2" gutterBottom>
@@ -136,8 +139,9 @@ export default function Dashboard() {
                 <Typography>Loading...</Typography>
               ) : Object.keys(summary.expenseCategories).length > 0 ? (
                 <List disablePadding>
-                  {Object.entries(summary.expenseCategories).map(
-                    ([category, amount], index) => (
+                  {Object.entries(summary.expenseCategories)
+                    .sort(([,a], [,b]) => b - a) // Sort by amount descending
+                    .map(([category, amount], index, array) => (
                       <React.Fragment key={category}>
                         <ListItem>
                           <ListItemText 
@@ -147,10 +151,9 @@ export default function Dashboard() {
                             {formatCurrency(amount)}
                           </Typography>
                         </ListItem>
-                        {index < Object.keys(summary.expenseCategories).length - 1 && <Divider />}
+                        {index < array.length - 1 && <Divider />}
                       </React.Fragment>
-                    )
-                  )}
+                    ))}
                 </List>
               ) : (
                 <Typography color="text.secondary" sx={{ mt: 2 }}>

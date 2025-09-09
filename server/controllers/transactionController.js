@@ -1,20 +1,38 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const Transaction = require('../models/transaction');
-const mongoose = require('mongoose'); // Import mongoose to use ObjectId
-const OpenAI = require('openai'); // <-- 1. ADD THIS
-const fs = require('fs');         // <-- 2. ADD THIS
+const mongoose = require('mongoose');
+const fs = require('fs');
 const mime = require('mime-types');
+
+// Import Google Generative AI
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Initialize the Google Generative AI client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 // @desc    Get all transactions for the logged-in user
 // @route   GET /api/transactions
 // @access  Private
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 exports.getTransactions = async (req, res, next) => {
   try {
-    // Fetch transactions belonging to the user, sorted by date descending
-    const transactions = await Transaction.find({ user: req.user.id }).sort({ date: -1 });
+    // Extract query parameters for pagination and sorting
+    const { limit, sort } = req.query;
+    
+    // Build the query
+    let query = Transaction.find({ user: req.user.id });
+    
+    // Apply sorting (default to date descending)
+    const sortBy = sort || '-date';
+    query = query.sort(sortBy);
+    
+    // Apply limit if specified
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+    
+    // Execute the query
+    const transactions = await query;
 
     return res.status(200).json({
       success: true,
@@ -127,7 +145,7 @@ exports.getSummary = async (req, res, next) => {
     const userId = new mongoose.Types.ObjectId(req.user.id);
     const { startDate, endDate } = req.query;
 
-    // 1. Build the base match stage
+    // Build the base match stage
     const matchCriteria = { user: userId };
     if (startDate || endDate) {
       matchCriteria.date = {};
@@ -142,7 +160,7 @@ exports.getSummary = async (req, res, next) => {
       }
     }
 
-    // 2. Use $facet to run multiple aggregations in parallel
+    // Use $facet to run multiple aggregations in parallel
     const summaryData = await Transaction.aggregate([
       { $match: matchCriteria },
       {
@@ -191,7 +209,7 @@ exports.getSummary = async (req, res, next) => {
       },
     ]);
 
-    // 3. Process the faceted results for a clean response
+    // Process the faceted results for a clean response
     const results = summaryData[0];
     const totalIncome = results.summary.find((s) => s._id === 'income')?.total || 0;
     const totalExpense = results.summary.find((s) => s._id === 'expense')?.total || 0;
@@ -208,57 +226,66 @@ exports.getSummary = async (req, res, next) => {
     next(err);
   }
 };
+
+// @desc    Upload receipt and extract data using Google Gemini
+// @route   POST /api/transactions/upload-receipt
+// @access  Private
 exports.uploadReceipt = async (req, res, next) => {
   try {
-    // 1. Check if file exists (from Multer middleware in 'uploads.jsx')
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
     }
 
     const filePath = req.file.path;
+    const mimeType = mime.lookup(filePath);
 
-    // 2. Read the file and convert it to Base64
-    const fileBuffer = fs.readFileSync(filePath);
-    const base64Image = fileBuffer.toString('base64');
-    const mimeType = mime.lookup(filePath) || 'application/octet-stream';
+    if (!mimeType) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ success: false, message: 'Could not determine file type.' });
+    }
 
-    // 3. Define the prompt for the AI
+    // Read file and create the data part for Gemini
+    const imageBuffer = fs.readFileSync(filePath);
+    const imagePart = {
+      inlineData: {
+        data: imageBuffer.toString("base64"),
+        mimeType: mimeType
+      },
+    };
+
+    const categoriesList = ["Rent", "Electricity", "Groceries", "Personal Care", "Health Insurance", "Loan", "Others"];
+    
+    // Define the prompt for Gemini
     const promptText = `
       You are an expert expense tracker. Analyze this receipt image and return ONLY a valid JSON object 
       with the following properties:
-      1. "type": This should always be "expense".
+      1. "type": This should always be the string "expense".
       2. "amount": The final total amount paid (as a number, not a string).
       3. "description": A short description or the name of the merchant (e.g., "Starbucks", "Target Purchase").
       4. "date": The date of the transaction in YYYY-MM-DD format. If no date is found, use today's date: ${new Date().toISOString().split('T')[0]}.
+      5. "category": Choose the BEST matching category from this list: [${categoriesList.map(c => `"${c}"`).join(', ')}]. If no category is a good fit, default to "Others".
       
-      If you cannot determine a value, make a reasonable guess or use null. Return only the JSON object and nothing else.
+      If you cannot determine a value, make a reasonable guess or use null. Return only the JSON object and nothing else. Do not wrap it in markdown backticks.
     `;
 
-    // 4. Send the request to OpenAI (using the model from your sample)
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Using gpt-4o as it's the latest and best for vision
-      response_format: { type: "json_object" }, // Ensures the output is valid JSON
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: promptText },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${mimeType};base64,${base64Image}`,
-              },
-            },
-          ],
-        },
-      ],
-    });
+    // Select the model and send the request
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    const result = await model.generateContent([promptText, imagePart]);
+    const response = await result.response;
+    let jsonText = response.text();
 
-    // 5. Clean up the uploaded file (optional, but good practice)
+    // Clean up the uploaded file
     fs.unlinkSync(filePath); 
 
-    // 6. Send the extracted data back to the client
-    const extractedData = JSON.parse(response.choices[0].message.content);
+    // Clean the response text (Gemini sometimes wraps JSON in markdown)
+    if (jsonText.startsWith("```json")) {
+      jsonText = jsonText.substring(7, jsonText.length - 3).trim();
+    } else if (jsonText.startsWith("```")) {
+      jsonText = jsonText.substring(3, jsonText.length - 3).trim();
+    }
+
+    // Send the extracted data back to the client
+    const extractedData = JSON.parse(jsonText);
 
     res.status(200).json({
       success: true,
@@ -266,10 +293,10 @@ exports.uploadReceipt = async (req, res, next) => {
     });
 
   } catch (err) {
-    // Clean up the file even if AI analysis fails
-    if (req.file && req.file.path) {
+    // Clean up the file if it still exists on error
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    next(err); // Pass to your global error handler
+    next(err);
   }
 };

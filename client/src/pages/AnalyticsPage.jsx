@@ -26,7 +26,15 @@ import {
   CircularProgress,
   Alert,
   TextField,
-  Button
+  Button,
+  Card,
+  CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
 
 // Colors for the Pie Chart slices
@@ -42,8 +50,31 @@ const formatCurrency = (amount) => {
   }).format(amount || 0);
 };
 
+/**
+ * A reusable component for the top summary cards.
+ */
+const StatCard = ({ title, value, color, percentage }) => (
+  <Card sx={{ height: '100%' }}>
+    <CardContent sx={{ textAlign: 'center', py: 3 }}>
+      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+        {title}
+      </Typography>
+      <Typography variant="h4" component="div" fontWeight="bold" color={`${color}.main`} sx={{ mb: 1 }}>
+        {value}
+      </Typography>
+      {percentage && (
+        <Typography variant="body2" color="text.secondary">
+          {percentage}
+        </Typography>
+      )}
+    </CardContent>
+  </Card>
+);
+
 const AnalyticsPage = () => {
+  // State variables
   const [data, setData] = useState(null);
+  const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
@@ -51,7 +82,7 @@ const AnalyticsPage = () => {
     endDate: ''
   });
 
-  // Fetch summary data from the backend
+  // Fetch summary data and recent transactions from the backend
   const fetchSummary = async (appliedFilters = filters) => {
     try {
       setLoading(true);
@@ -62,8 +93,16 @@ const AnalyticsPage = () => {
       if (!params.startDate) delete params.startDate;
       if (!params.endDate) delete params.endDate;
       
-      const response = await api.get('/api/transactions/summary', { params });
-      setData(response.data);
+      // Fetch summary data
+      const summaryResponse = await api.get('/api/transactions/summary', { params });
+      setData(summaryResponse.data);
+
+      // Fetch recent transactions (last 10 transactions)
+      const transactionsResponse = await api.get('/api/transactions', { 
+        params: { limit: 10, sort: '-date' } 
+      });
+      setRecentTransactions(transactionsResponse.data.data || []);
+      
     } catch (err) {
       console.error('Error fetching analytics:', err);
       setError('Failed to load analytics data.');
@@ -84,7 +123,16 @@ const AnalyticsPage = () => {
   const applyFilters = () => {
     fetchSummary(filters);
   };
-  
+
+  // Helper function to format dates nicely
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   // Helper to process monthly data for the bar chart
   const formatMonthlyDataForBarChart = (trends = []) => {
     const months = {};
@@ -114,8 +162,15 @@ const AnalyticsPage = () => {
     return <Alert severity="error" sx={{ m: 4 }}>{error}</Alert>;
   }
 
+  const totalIncome = data?.summary.find(s => s._id === 'income')?.total || 0;
+  const totalExpense = data?.summary.find(s => s._id === 'expense')?.total || 0;
+  const netBalance = data?.netIncome || 0;
+  
   const barChartData = formatMonthlyDataForBarChart(data?.monthlyTrends);
-  const pieChartData = data?.categoryBreakdown || [];
+  // Filter out null/undefined categories and sort by amount
+  const pieChartData = (data?.categoryBreakdown || [])
+    .filter(item => item._id && item._id.trim() !== '') // Remove null, undefined, or empty categories
+    .sort((a, b) => b.total - a.total); // Sort by total amount descending
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -127,13 +182,31 @@ const AnalyticsPage = () => {
       <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
         <Grid container spacing={3} alignItems="flex-end">
           <Grid item xs={12} sm={4}>
-            <TextField label="Start Date" type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} fullWidth InputLabelProps={{ shrink: true }}/>
+            <TextField 
+              label="Start Date" 
+              type="date" 
+              name="startDate" 
+              value={filters.startDate} 
+              onChange={handleFilterChange} 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField label="End Date" type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} fullWidth InputLabelProps={{ shrink: true }}/>
+            <TextField 
+              label="End Date" 
+              type="date" 
+              name="endDate" 
+              value={filters.endDate} 
+              onChange={handleFilterChange} 
+              fullWidth 
+              InputLabelProps={{ shrink: true }}
+            />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Button variant="contained" onClick={applyFilters} fullWidth>Apply Filters</Button>
+            <Button variant="contained" onClick={applyFilters} fullWidth>
+              APPLY FILTERS
+            </Button>
           </Grid>
         </Grid>
       </Paper>
@@ -141,35 +214,47 @@ const AnalyticsPage = () => {
       {/* Top Stats */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="subtitle1" color="text.secondary">Total Income</Typography>
-                <Typography variant="h5" color="success.main">{formatCurrency(data?.summary.find(s => s._id === 'income')?.total)}</Typography>
-            </Paper>
+          <StatCard 
+            title="Total Income"
+            value={formatCurrency(totalIncome)}
+            color="success"
+          />
         </Grid>
         <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="subtitle1" color="text.secondary">Total Expenses</Typography>
-                <Typography variant="h5" color="error.main">{formatCurrency(data?.summary.find(s => s._id === 'expense')?.total)}</Typography>
-            </Paper>
+          <StatCard 
+            title="Total Expenses"
+            value={formatCurrency(totalExpense)}
+            color="error"
+          />
         </Grid>
         <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="subtitle1" color="text.secondary">Net Balance</Typography>
-                <Typography variant="h5" color={data?.netIncome >= 0 ? 'info.main' : 'error.main'}>{formatCurrency(data?.netIncome)}</Typography>
-            </Paper>
+          <StatCard 
+            title="Net Balance"
+            value={formatCurrency(netBalance)}
+            color={netBalance >= 0 ? 'info' : 'error'}
+          />
         </Grid>
       </Grid>
       
-      {/* Charts */}
-      <Grid container spacing={3}>
+      {/* Charts Section */}
+      <Grid container spacing={3} mb={4}>
         {/* Expense Category Breakdown (Pie Chart) */}
-        <Grid item xs={12} lg={5}>
-          <Paper sx={{ p: 2, height: 450 }}>
+        <Grid item xs={12} lg={6}>
+          <Paper sx={{ p: 3, height: 400 }}>
             <Typography variant="h6" gutterBottom>Expense Breakdown</Typography>
             {pieChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="90%">
+              <ResponsiveContainer width="100%" height="85%">
                 <PieChart>
-                  <Pie data={pieChartData} dataKey="total" nameKey="_id" cx="50%" cy="50%" outerRadius={120} labelLine={false} label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}>
+                  <Pie 
+                    data={pieChartData} 
+                    dataKey="total" 
+                    nameKey="_id" 
+                    cx="50%" 
+                    cy="50%" 
+                    outerRadius={100} 
+                    labelLine={false} 
+                    label={({ _id, percent }) => `${(percent * 100).toFixed(1)}%`}
+                  >
                     {pieChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
@@ -178,33 +263,79 @@ const AnalyticsPage = () => {
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
-            ) : <Typography sx={{ textAlign: 'center', pt: 10 }}>No expense data for this period.</Typography>}
+            ) : (
+              <Typography sx={{ textAlign: 'center', pt: 10 }}>No expense data for this period.</Typography>
+            )}
           </Paper>
         </Grid>
 
         {/* Monthly Trends (Bar Chart) */}
-        <Grid item xs={12} lg={7}>
-          <Paper sx={{ p: 2, height: 450 }}>
+        <Grid item xs={12} lg={6}>
+          <Paper sx={{ p: 3, height: 400 }}>
             <Typography variant="h6" gutterBottom>Monthly Income vs. Expense</Typography>
             {barChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="90%">
-              <BarChart data={barChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => `$${value/1000}k`} />
-                <Tooltip formatter={(value) => formatCurrency(value)} />
-                <Legend />
-                <Bar dataKey="income" fill="#1E88E5" />
-                <Bar dataKey="expense" fill="#E53935" />
-              </BarChart>
-            </ResponsiveContainer>
-             ) : <Typography sx={{ textAlign: 'center', pt: 10 }}>No monthly data available for this period.</Typography>}
+              <ResponsiveContainer width="100%" height="85%">
+                <BarChart data={barChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                  <Legend />
+                  <Bar dataKey="income" fill="#1E88E5" name="Income" />
+                  <Bar dataKey="expense" fill="#E53935" name="Expense" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <Typography sx={{ textAlign: 'center', pt: 10 }}>No monthly data available for this period.</Typography>
+            )}
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Recent Transactions Table */}
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>Recent Transactions</Typography>
+        {recentTransactions && recentTransactions.length > 0 ? (
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Category</TableCell>
+                  <TableCell align="right">Amount</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {recentTransactions.slice(0, 5).map((transaction) => (
+                  <TableRow key={transaction._id}>
+                    <TableCell>{formatDate(transaction.date)}</TableCell>
+                    <TableCell>{transaction.description}</TableCell>
+                    <TableCell>{transaction.category}</TableCell>
+                    <TableCell align="right" sx={{ 
+                      color: transaction.type === 'income' ? 'success.main' : 'error.main',
+                      fontWeight: 'medium'
+                    }}>
+                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body1" color="text.secondary">
+              Recent transactions will appear here once you have transaction data.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Add some transactions to see your recent activity!
+            </Typography>
+          </Box>
+        )}
+      </Paper>
     </Container>
   );
 };
 
 export default AnalyticsPage;
-

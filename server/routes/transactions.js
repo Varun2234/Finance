@@ -6,9 +6,9 @@ const {
   addTransaction,
   updateTransaction,
   deleteTransaction,
-  getCategories,
+  // *** MODIFICATION: Removed getCategories ***
   uploadReceipt,
-  getSummary, // <-- IMPORT ADDED
+  getSummary, 
 } = require('../controllers/transactionController');
 
 const { validateTransaction, checkValidation } = require('../middleware/validation');
@@ -22,8 +22,8 @@ const router = express.Router();
 router.use(protect);
 
 // THESE ROUTES MUST BE BEFORE /:id
-router.route('/categories').get(getCategories);
-router.route('/summary').get(getSummary); // <-- ROUTE ADDED
+// *** MODIFICATION: Removed the /categories route ***
+router.route('/summary').get(getSummary); 
 
 router.route('/upload-receipt').post(upload, uploadReceipt); 
 

@@ -32,8 +32,19 @@ const validationSchema = yup.object({
   date: yup.string().required('Date is required'),
 });
 
+// *** MODIFICATION: Define the static category list ***
+const categories = [
+  "Rent", 
+  "Electricity", 
+  "Groceries", 
+  "Personal Care", 
+  "Health Insurance", 
+  "Loan", 
+  "Others"
+];
+
 const AddTransactionPage = () => {
-  const [categories, setCategories] = useState([]);
+  // *** MODIFICATION: Removed useState for categories ***
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
@@ -50,29 +61,13 @@ const AddTransactionPage = () => {
     defaultValues: {
       type: 'expense',
       amount: '',
-      category: '',
+      category: categories[0], // *** MODIFICATION: Set default from static list ***
       description: '',
-      date: new Date().toISOString().split('T')[0], // Set today's date as default
+      date: new Date().toISOString().split('T')[0], 
     }
   });
 
-  // 3. Fetch transaction categories on component mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const { data } = await api.get('/api/transactions/categories');
-        setCategories(data.data); // <-- MODIFIED
-        // Set default category in the form if categories are fetched
-        if (data.data.length > 0) { // <-- MODIFIED
-          reset(formValues => ({ ...formValues, category: data.data[0] })); // <-- MODIFIED
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        setMessage({ type: 'error', content: 'Failed to load categories' });
-      }
-    };
-    fetchCategories();
-  }, [reset]);
+  // *** MODIFICATION: Removed the useEffect hook that fetched categories ***
 
   const handleFileChange = (e) => {
     setSelectedFile(e.target.files[0]);
@@ -98,6 +93,7 @@ const AddTransactionPage = () => {
       reset({
         type: 'expense', // Receipts are almost always expenses
         amount: data.extractedData.amount || '',
+        // *** MODIFICATION: Check against static list ***
         category: categories.includes(data.extractedData.category) ? data.extractedData.category : categories[0],
         description: data.extractedData.description || '',
         date: data.extractedData.date || new Date().toISOString().split('T')[0],
@@ -211,6 +207,7 @@ const AddTransactionPage = () => {
                 control={control}
                 render={({ field }) => (
                   <TextField {...field} select label="Category" fullWidth error={!!errors.category} helperText={errors.category?.message}>
+                    {/* *** MODIFICATION: Mapped over static list *** */}
                     {categories.map(cat => (
                       <MenuItem key={cat} value={cat}>{cat}</MenuItem>
                     ))}
