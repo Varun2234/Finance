@@ -1,388 +1,168 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
-// Recharts Components for data visualization
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  Tooltip, 
-  Legend, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid 
-} from 'recharts';
+const COLORS = ['#0088FE','#00C49F','#FFBB28','#FF8042','#AF19FF','#FF1943','#19D4FF','#FFA500','#00CED1','#FF69B4'];
 
-// MUI Components
-import {
-  Container,
-  Typography,
-  Grid,
-  Paper,
-  Box,
-  CircularProgress,
-  Alert,
-  TextField,
-  Button,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow
-} from '@mui/material';
+const formatCurrency = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
 
-// Colors for the Pie Chart slices
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1943', '#19D4FF'];
-
-/**
- * A utility function to format currency numbers.
- */
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount || 0);
-};
-
-/**
- * A reusable component for the top summary cards.
- */
-const StatCard = ({ title, value, color, percentage }) => (
-  <Card sx={{ height: '100%' }}>
-    <CardContent sx={{ textAlign: 'center', py: 3 }}>
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{
-        fontFamily: 'Inter, sans-serif'
-      }}>
-        {title}
-      </Typography>
-      <Typography variant="h4" component="div" fontWeight="bold" color={`${color}.main`} sx={{ 
-        mb: 1,
-        fontFamily: 'JetBrains Mono, monospace',
-        letterSpacing: '0.02em'
-      }}>
-        {value}
-      </Typography>
-      {percentage && (
-        <Typography variant="body2" color="text.secondary" sx={{
-          fontFamily: 'Inter, sans-serif'
-        }}>
-          {percentage}
-        </Typography>
-      )}
-    </CardContent>
-  </Card>
+const StatCard = ({ title, value, color }) => (
+  <div className="bg-white rounded-lg shadow p-5 text-center flex flex-col justify-center items-center">
+    <div className="text-gray-500 font-inter mb-1">{title}</div>
+    <div className={`text-2xl font-bold font-jetbrains ${color}`}>{value}</div>
+  </div>
 );
 
 const AnalyticsPage = () => {
-  // State variables
   const [data, setData] = useState(null);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: ''
-  });
+  const [filters, setFilters] = useState({ startDate: '', endDate: '' });
 
-  // Fetch summary data and recent transactions from the backend
   const fetchSummary = async (appliedFilters = filters) => {
     try {
       setLoading(true);
       setError('');
-      
       const params = { ...appliedFilters };
-      // Remove empty filter values so they aren't sent
       if (!params.startDate) delete params.startDate;
       if (!params.endDate) delete params.endDate;
-      
-      // Fetch summary data
+
       const summaryResponse = await api.get('/api/transactions/summary', { params });
       setData(summaryResponse.data);
 
-      // Fetch recent transactions (last 10 transactions)
-      const transactionsResponse = await api.get('/api/transactions', { 
-        params: { limit: 10, sort: '-date' } 
-      });
+      const transactionsResponse = await api.get('/api/transactions', { params: { limit: 10, sort: '-date' } });
       setRecentTransactions(transactionsResponse.data.data || []);
-      
     } catch (err) {
-      console.error('Error fetching analytics:', err);
+      console.error(err);
       setError('Failed to load analytics data.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchSummary(); // Fetch on initial load
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchSummary(); }, []);
 
-  const handleFilterChange = (e) => {
-    setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+  const handleFilterChange = (e) => setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const applyFilters = () => fetchSummary(filters);
 
-  const applyFilters = () => {
-    fetchSummary(filters);
-  };
-
-  // Helper function to format dates nicely
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  // Helper to process monthly data for the bar chart
+  const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const formatMonthlyDataForBarChart = (trends = []) => {
     const months = {};
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     trends.forEach(trend => {
-      const monthYear = `${monthNames[trend._id.month - 1]} '${String(trend._id.year).slice(2)}`;
-      if (!months[monthYear]) {
-        months[monthYear] = { name: monthYear, income: 0, expense: 0, year: trend._id.year, month: trend._id.month };
-      }
+      const monthYear = `${monthNames[trend._id.month-1]} '${String(trend._id.year).slice(2)}`;
+      if (!months[monthYear]) months[monthYear] = { name: monthYear, income:0, expense:0, year:trend._id.year, month:trend._id.month };
       months[monthYear][trend._id.type] = trend.total;
     });
-    
-    // Sort chronologically
-    return Object.values(months).sort((a, b) => a.year === b.year ? a.month - b.month : a.year - b.year);
+    return Object.values(months).sort((a,b) => a.year===b.year?a.month-b.month:a.year-b.year);
   };
-  
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
 
-  if (error) {
-    return <Alert severity="error" sx={{ m: 4 }}>{error}</Alert>;
-  }
+  if (loading) return <div className="flex justify-center items-center h-[80vh]"><div className="loader"></div></div>;
+  if (error) return <div className="m-4 text-red-500">{error}</div>;
 
-  const totalIncome = data?.summary.find(s => s._id === 'income')?.total || 0;
-  const totalExpense = data?.summary.find(s => s._id === 'expense')?.total || 0;
+  const totalIncome = data?.summary.find(s => s._id==='income')?.total || 0;
+  const totalExpense = data?.summary.find(s => s._id==='expense')?.total || 0;
   const netBalance = data?.netIncome || 0;
-  
+
   const barChartData = formatMonthlyDataForBarChart(data?.monthlyTrends);
-  // Filter out null/undefined categories and sort by amount
-  const pieChartData = (data?.categoryBreakdown || [])
-    .filter(item => item._id && item._id.trim() !== '') // Remove null, undefined, or empty categories
-    .sort((a, b) => b.total - a.total); // Sort by total amount descending
+  const pieChartData = (data?.categoryBreakdown || []).filter(item => item._id && item._id.trim() !== '').sort((a,b) => b.total - a.total);
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom component="h1" sx={{
-        fontFamily: 'Inter, sans-serif',
-        fontWeight: 600
-      }}>
-        Financial Analytics
-      </Typography>
+    <div className="container mx-auto my-6 px-4">
+      <h1 className="text-3xl font-semibold mb-6 font-inter">Financial Analytics</h1>
 
       {/* Filter Section */}
-      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={3} alignItems="flex-end">
-          <Grid item xs={12} sm={4}>
-            <TextField 
-              label="Start Date" 
-              type="date" 
-              name="startDate" 
-              value={filters.startDate} 
-              onChange={handleFilterChange} 
-              fullWidth 
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField 
-              label="End Date" 
-              type="date" 
-              name="endDate" 
-              value={filters.endDate} 
-              onChange={handleFilterChange} 
-              fullWidth 
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Button variant="contained" onClick={applyFilters} fullWidth sx={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 500
-            }}>
-              APPLY FILTERS
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
+      <div className="bg-white shadow rounded-lg p-4 mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <input type="date" name="startDate" value={filters.startDate} onChange={handleFilterChange} className="border rounded px-3 py-2"/>
+        <input type="date" name="endDate" value={filters.endDate} onChange={handleFilterChange} className="border rounded px-3 py-2"/>
+        <button onClick={applyFilters} className="bg-blue-600 text-white font-inter rounded px-4 py-2">Apply Filters</button>
+      </div>
 
-      {/* Top Stats */}
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={4}>
-          <StatCard 
-            title="Total Income"
-            value={formatCurrency(totalIncome)}
-            color="success"
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <StatCard 
-            title="Total Expenses"
-            value={formatCurrency(totalExpense)}
-            color="error"
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <StatCard 
-            title="Net Balance"
-            value={formatCurrency(netBalance)}
-            color={netBalance >= 0 ? 'info' : 'error'}
-          />
-        </Grid>
-      </Grid>
-      
-      {/* Charts Section */}
-      <Grid container spacing={3} mb={4}>
-        {/* Expense Category Breakdown (Pie Chart) */}
-        <Grid item xs={12} lg={6}>
-          <Paper sx={{ p: 3, height: 400 }}>
-            <Typography variant="h6" gutterBottom sx={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 600
-            }}>
-              Expense Breakdown
-            </Typography>
-            {pieChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="85%">
-                <PieChart>
-                  <Pie 
-                    data={pieChartData} 
-                    dataKey="total" 
-                    nameKey="_id" 
-                    cx="50%" 
-                    cy="50%" 
-                    outerRadius={100} 
-                    labelLine={false} 
-                    label={({ _id, percent }) => `${(percent * 100).toFixed(1)}%`}
-                  >
-                    {pieChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(value)} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <Typography sx={{ 
-                textAlign: 'center', 
-                pt: 10,
-                fontFamily: 'Inter, sans-serif'
-              }}>
-                No expense data for this period.
-              </Typography>
-            )}
-          </Paper>
-        </Grid>
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <StatCard title="Total Income" value={formatCurrency(totalIncome)} color="text-green-600" />
+        <StatCard title="Total Expenses" value={formatCurrency(totalExpense)} color="text-red-600" />
+        <StatCard title="Net Balance" value={formatCurrency(netBalance)} color={netBalance>=0?'text-blue-600':'text-red-600'} />
+      </div>
 
-        {/* Monthly Trends (Bar Chart) */}
-        <Grid item xs={12} lg={6}>
-          <Paper sx={{ p: 3, height: 400 }}>
-            <Typography variant="h6" gutterBottom sx={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 600
-            }}>
-              Monthly Income vs. Expense
-            </Typography>
-            {barChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="85%">
-                <BarChart data={barChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(value) => formatCurrency(value)} />
-                  <Legend />
-                  <Bar dataKey="income" fill="#1E88E5" name="Income" />
-                  <Bar dataKey="expense" fill="#E53935" name="Expense" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <Typography sx={{ 
-                textAlign: 'center', 
-                pt: 10,
-                fontFamily: 'Inter, sans-serif'
-              }}>
-                No monthly data available for this period.
-              </Typography>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        {/* Pie Chart */}
+        <div className="bg-white shadow rounded-lg p-4 h-[400px]">
+          <h2 className="font-semibold font-inter mb-2">Expense Breakdown</h2>
+          {pieChartData.length>0 ? (
+            <ResponsiveContainer width="100%" height="85%">
+              <PieChart>
+                <Pie data={pieChartData} dataKey="total" nameKey="_id" cx="50%" cy="50%" outerRadius={100} label={({ percent }) => `${(percent*100).toFixed(1)}%`}>
+                  {pieChartData.map((entry,index)=> <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                </Pie>
+                <Tooltip formatter={value => formatCurrency(value)} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex justify-center items-center h-full text-gray-400 font-inter">No expense data for this period.</div>
+          )}
+        </div>
 
-      {/* Recent Transactions Table */}
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{
-          fontFamily: 'Inter, sans-serif',
-          fontWeight: 600
-        }}>
-          Recent Transactions
-        </Typography>
-        {recentTransactions && recentTransactions.length > 0 ? (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Date</TableCell>
-                  <TableCell sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Description</TableCell>
-                  <TableCell sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Category</TableCell>
-                  <TableCell align="right" sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Amount</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {recentTransactions.slice(0, 5).map((transaction) => (
-                  <TableRow key={transaction._id}>
-                    <TableCell sx={{ fontFamily: 'Inter, sans-serif' }}>{formatDate(transaction.date)}</TableCell>
-                    <TableCell sx={{ fontFamily: 'Inter, sans-serif' }}>{transaction.description}</TableCell>
-                    <TableCell sx={{ fontFamily: 'Inter, sans-serif' }}>{transaction.category}</TableCell>
-                    <TableCell align="right" sx={{ 
-                      color: transaction.type === 'income' ? 'success.main' : 'error.main',
-                      fontWeight: 'medium',
-                      fontFamily: 'JetBrains Mono, monospace',
-                      letterSpacing: '0.02em'
-                    }}>
-                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                    </TableCell>
-                  </TableRow>
+        {/* Bar Chart */}
+        <div className="bg-white shadow rounded-lg p-4 h-[400px]">
+          <h2 className="font-semibold font-inter mb-2">Monthly Income vs Expense</h2>
+          {barChartData.length>0 ? (
+            <ResponsiveContainer width="100%" height="85%">
+              <BarChart data={barChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={value => `$${(value/1000).toFixed(0)}k`} />
+                <Tooltip formatter={value => formatCurrency(value)} />
+                <Legend />
+                <Bar dataKey="income" fill="#1E88E5" name="Income"/>
+                <Bar dataKey="expense" fill="#E53935" name="Expense"/>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex justify-center items-center h-full text-gray-400 font-inter">No monthly data available for this period.</div>
+          )}
+        </div>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="bg-white shadow rounded-lg p-4">
+        <h2 className="font-semibold font-inter mb-2">Recent Transactions</h2>
+        {recentTransactions.length>0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left font-inter font-semibold">Date</th>
+                  <th className="px-4 py-2 text-left font-inter font-semibold">Description</th>
+                  <th className="px-4 py-2 text-left font-inter font-semibold">Category</th>
+                  <th className="px-4 py-2 text-right font-inter font-semibold">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {recentTransactions.slice(0,5).map(tx => (
+                  <tr key={tx._id}>
+                    <td className="px-4 py-2 font-inter">{formatDate(tx.date)}</td>
+                    <td className="px-4 py-2 font-inter">{tx.description}</td>
+                    <td className="px-4 py-2 font-inter">{tx.category}</td>
+                    <td className={`px-4 py-2 text-right font-jetbrains ${tx.type==='income'?'text-green-600':'text-red-600'}`}>
+                      {tx.type==='income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body1" color="text.secondary" sx={{
-              fontFamily: 'Inter, sans-serif'
-            }}>
-              Recent transactions will appear here once you have transaction data.
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ 
-              mt: 1,
-              fontFamily: 'Inter, sans-serif'
-            }}>
-              Add some transactions to see your recent activity!
-            </Typography>
-          </Box>
+          <div className="text-center py-8 text-gray-400 font-inter">
+            <p>Recent transactions will appear here once you have transaction data.</p>
+            <p className="mt-1">Add some transactions to see your recent activity!</p>
+          </div>
         )}
-      </Paper>
-    </Container>
+      </div>
+    </div>
   );
 };
 

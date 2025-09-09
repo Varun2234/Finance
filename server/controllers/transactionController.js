@@ -1,18 +1,12 @@
 const dotenv = require("dotenv");
 dotenv.config();
+
 const Transaction = require('../models/transaction');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const mime = require('mime-types');
 
-// Import Google Generative AI
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-// Initialize the Google Generative AI client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// @desc    Get all transactions for the logged-in user
-// @route   GET /api/transactions
+const { DocumentAnalysisClient, AzureKeyCredential } = require("@azure/ai-form-recognizer");
 // @access  Private
 exports.getTransactions = async (req, res, next) => {
   try {
@@ -237,59 +231,46 @@ exports.uploadReceipt = async (req, res, next) => {
     }
 
     const filePath = req.file.path;
-    const mimeType = mime.lookup(filePath);
+    const fileStream = fs.createReadStream(filePath);
 
-    if (!mimeType) {
-      fs.unlinkSync(filePath);
-      return res.status(400).json({ success: false, message: 'Could not determine file type.' });
-    }
+    // Initialize the Document Analysis Client
+    const client = new DocumentAnalysisClient(
+      process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT,
+      new AzureKeyCredential(process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY)
+    );
 
-    // Read file and create the data part for Gemini
-    const imageBuffer = fs.readFileSync(filePath);
-    const imagePart = {
-      inlineData: {
-        data: imageBuffer.toString("base64"),
-        mimeType: mimeType
-      },
-    };
-
-    const categoriesList = ["Rent", "Electricity", "Groceries", "Personal Care", "Health Insurance", "Loan", "Others"];
-    
-    // Define the prompt for Gemini
-    const promptText = `
-      You are an expert expense tracker. Analyze this receipt image and return ONLY a valid JSON object 
-      with the following properties:
-      1. "type": This should always be the string "expense".
-      2. "amount": The final total amount paid (as a number, not a string).
-      3. "description": A short description or the name of the merchant (e.g., "Starbucks", "Target Purchase").
-      4. "date": The date of the transaction in YYYY-MM-DD format. If no date is found, use today's date: ${new Date().toISOString().split('T')[0]}.
-      5. "category": Choose the BEST matching category from this list: [${categoriesList.map(c => `"${c}"`).join(', ')}]. If no category is a good fit, default to "Others".
-      
-      If you cannot determine a value, make a reasonable guess or use null. Return only the JSON object and nothing else. Do not wrap it in markdown backticks.
-    `;
-
-    // Select the model and send the request
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
-    const result = await model.generateContent([promptText, imagePart]);
-    const response = await result.response;
-    let jsonText = response.text();
+    // Analyze the receipt
+    const poller = await client.beginAnalyzeDocument("prebuilt-receipt", fileStream);
+    const { documents: [receipt] } = await poller.pollUntilDone();
 
     // Clean up the uploaded file
-    fs.unlinkSync(filePath); 
+    fs.unlinkSync(filePath);
 
-    // Clean the response text (Gemini sometimes wraps JSON in markdown)
-    if (jsonText.startsWith("```json")) {
-      jsonText = jsonText.substring(7, jsonText.length - 3).trim();
-    } else if (jsonText.startsWith("```")) {
-      jsonText = jsonText.substring(3, jsonText.length - 3).trim();
+    if (!receipt) {
+      return res.status(400).json({ success: false, message: 'Could not analyze the receipt.' });
     }
+console.log(receipt.fields);
 
-    // Send the extracted data back to the client
-    const extractedData = JSON.parse(jsonText);
+    // Extract fields from the receipt
+    const getField = (fieldName) => {
+  const field = receipt.fields[fieldName];
+  if (!field) return null;
+  return field.value ?? field.content ?? null;
+};
 
-    res.status(200).json({
+
+    const extractedData = {
+      user: req.user.id, // link to the logged-in user
+      type: 'expense',
+      amount: parseFloat(getField('Total')) || 0,
+      description: getField('MerchantName') || 'N/A',
+      date: getField('TransactionDate') || new Date().toISOString().split('T')[0],
+      category: 'Others',
+    };
+
+    res.status(201).json({
       success: true,
-      extractedData: extractedData,
+      data: extractedData,
     });
 
   } catch (err) {
