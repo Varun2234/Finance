@@ -6,7 +6,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import TransactionsPage from './pages/TransactionsPage.jsx';
 import AddTransactionPage from './pages/AddTransactionPage.jsx';
 import AnalyticsPage from './pages/AnalyticsPage.jsx';
-
+import HomePage from './pages/HomePage.jsx';
 // Public pages for login and registration
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/Signup.jsx';
@@ -44,8 +44,8 @@ function App() {
       {/* Main Application Routes (with Navbar and Authentication) */}
       <Route element={<AppLayout />}>
         {/* Default route for the application */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
+        {/* <Route path="/" element={<Navigate to="/dashboard" replace />} />x */}
+        <Route path="/" element={<HomePage />} />
         {/* Protected main application pages */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/transactions" element={<TransactionsPage />} />

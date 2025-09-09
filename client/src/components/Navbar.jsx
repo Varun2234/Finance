@@ -47,20 +47,28 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar position="static">
-      <Toolbar>
-        <FinanceIcon sx={{ mr: 1 }} />
-        <Typography variant="h6" component="div" sx={{ 
-          flexGrow: 1,
-          fontFamily: 'Inter, sans-serif',
-          fontWeight: 600
-        }}>
-          MyFinance
-        </Typography>
+    <AppBar position="static" sx={{ bgcolor: '#28231C' }}>
+  <Toolbar>
+    <FinanceIcon sx={{ mr: 1 }} />
+    <Typography
+      variant="h6"
+      component="div"
+      sx={{
+        flexGrow: 1,
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: 600,
+      }}
+    >
+      MyFinance
+    </Typography>
+
 
         {isAuthenticated ? (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box sx={{ display: { xs: 'none', md: 'flex' }, mr: 3 }}>
+              <Button sx={navLinkStyle} component={NavLink} to="/">
+                Home
+              </Button>
               <Button sx={navLinkStyle} component={NavLink} to="/dashboard">
                 Dashboard
               </Button>
@@ -73,6 +81,9 @@ const Navbar = () => {
               <Button sx={navLinkStyle} component={NavLink} to="/analytics">
                 Analytics
               </Button>
+              {/* <Button sx={navLinkStyle} component={NavLink} to="/about">
+                About
+              </Button> */}
             </Box>
             
             <Typography sx={{ 

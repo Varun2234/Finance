@@ -71,10 +71,23 @@ export default function Dashboard() {
   };
 
   return (
+  <Box sx={{ bgcolor: '#C1EEFF', minHeight: '100vh', py: 4 }}>
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-        <Typography variant="h4" gutterBottom component="h1" sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Dashboard</Typography>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <Typography
+          variant="h4"
+          gutterBottom
+          component="h1"
+          sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}
+        >
+          Dashboard
+        </Typography>
       </motion.div>
+
 
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} md={4}>
@@ -113,5 +126,6 @@ export default function Dashboard() {
         </Card>
       </motion.div>
     </Container>
+    </Box>
   );
 }
