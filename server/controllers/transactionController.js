@@ -4,10 +4,13 @@ dotenv.config();
 const Transaction = require('../models/transaction');
 const mongoose = require('mongoose');
 const fs = require('fs');
+const path = require('path');
 const mime = require('mime-types');
 
 const { DocumentAnalysisClient, AzureKeyCredential } = require("@azure/ai-form-recognizer");
 // @access  Private
+
+
 exports.getTransactions = async (req, res, next) => {
   try {
     // Extract query parameters for pagination and sorting
@@ -224,6 +227,9 @@ exports.getSummary = async (req, res, next) => {
 // @desc    Upload receipt and extract data using Google Gemini
 // @route   POST /api/transactions/upload-receipt
 // @access  Private
+// @desc    Upload receipt and extract data using Azure Document Intelligence
+// @route   POST /api/transactions/upload-receipt
+// @access  Private
 exports.uploadReceipt = async (req, res, next) => {
   try {
     if (!req.file) {
@@ -231,7 +237,21 @@ exports.uploadReceipt = async (req, res, next) => {
     }
 
     const filePath = req.file.path;
-    const fileStream = fs.createReadStream(filePath);
+    const fileExtension = path.extname(req.file.originalname).toLowerCase();
+    
+    console.log(`Processing file: ${req.file.originalname}, type: ${req.file.mimetype}, size: ${req.file.size} bytes`);
+
+    // Check if we have the required Azure credentials
+    if (!process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT || !process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY) {
+      // Clean up the uploaded file
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Azure Document Intelligence credentials not configured.' 
+      });
+    }
 
     // Initialize the Document Analysis Client
     const client = new DocumentAnalysisClient(
@@ -239,45 +259,112 @@ exports.uploadReceipt = async (req, res, next) => {
       new AzureKeyCredential(process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY)
     );
 
-    // Analyze the receipt
-    const poller = await client.beginAnalyzeDocument("prebuilt-receipt", fileStream);
-    const { documents: [receipt] } = await poller.pollUntilDone();
+    let analysisResult;
 
-    // Clean up the uploaded file
-    fs.unlinkSync(filePath);
+    try {
+      // For PDF files, we need to read as buffer
+      if (fileExtension === '.pdf') {
+        const fileBuffer = fs.readFileSync(filePath);
+        const poller = await client.beginAnalyzeDocument("prebuilt-receipt", fileBuffer);
+        analysisResult = await poller.pollUntilDone();
+      } else {
+        // For image files, we can use stream
+        const fileStream = fs.createReadStream(filePath);
+        const poller = await client.beginAnalyzeDocument("prebuilt-receipt", fileStream);
+        analysisResult = await poller.pollUntilDone();
+      }
+    } catch (analysisError) {
+      console.error('Azure Document Intelligence error:', analysisError);
+      // Clean up the uploaded file
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      return res.status(400).json({ 
+        success: false, 
+        message: `Failed to analyze the document: ${analysisError.message}` 
+      });
+    }
+
+    // Clean up the uploaded file after processing
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    const { documents } = analysisResult;
+    const receipt = documents && documents[0];
 
     if (!receipt) {
-      return res.status(400).json({ success: false, message: 'Could not analyze the receipt.' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Could not analyze the receipt. Please ensure the file contains a valid receipt.' 
+      });
     }
-console.log(receipt.fields);
 
-    // Extract fields from the receipt
+    console.log('Receipt fields found:', Object.keys(receipt.fields || {}));
+
+    // Extract fields from the receipt with better error handling
     const getField = (fieldName) => {
-  const field = receipt.fields[fieldName];
-  if (!field) return null;
-  return field.value ?? field.content ?? null;
-};
+      const field = receipt.fields && receipt.fields[fieldName];
+      if (!field) return null;
+      
+      // Handle different field types
+      if (field.value !== undefined) {
+        return field.value;
+      } else if (field.content !== undefined) {
+        return field.content;
+      } else if (field.valueString !== undefined) {
+        return field.valueString;
+      } else if (field.valueNumber !== undefined) {
+        return field.valueNumber;
+      } else if (field.valueDate !== undefined) {
+        return field.valueDate;
+      }
+      
+      return null;
+    };
 
+    // Extract and format the data
+    const totalAmount = getField('Total') || getField('TotalPrice') || 0;
+    const merchantName = getField('MerchantName') || getField('Vendor') || 'Unknown Merchant';
+    const transactionDate = getField('TransactionDate') || getField('Date') || new Date().toISOString().split('T')[0];
+    
+    // Convert date to proper format if it's a Date object
+    let formattedDate = transactionDate;
+    if (transactionDate instanceof Date) {
+      formattedDate = transactionDate.toISOString().split('T')[0];
+    } else if (typeof transactionDate === 'string') {
+      // Try to parse the date string and format it
+      const parsedDate = new Date(transactionDate);
+      if (!isNaN(parsedDate.getTime())) {
+        formattedDate = parsedDate.toISOString().split('T')[0];
+      }
+    }
 
     const extractedData = {
-      user: req.user.id, // link to the logged-in user
+      user: req.user.id,
       type: 'expense',
-      amount: parseFloat(getField('Total')) || 0,
-      description: getField('MerchantName') || 'N/A',
-      date: getField('TransactionDate') || new Date().toISOString().split('T')[0],
-      category: 'Others',
+      amount: parseFloat(totalAmount) || 0,
+      description: merchantName || 'Receipt Transaction',
+      date: formattedDate,
+      category: 'Others', // Default category
     };
+
+    console.log('Extracted data:', extractedData);
 
     res.status(201).json({
       success: true,
       data: extractedData,
+      message: 'Receipt processed successfully. Please review the extracted information.',
     });
 
   } catch (err) {
+    console.error('Upload receipt error:', err);
+    
     // Clean up the file if it still exists on error
     if (req.file && req.file.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
+    
     next(err);
   }
 };

@@ -1,5 +1,12 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
+// Ensure uploads directory exists
+const uploadsDir = './uploads/';
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Set up storage engine for multer
 const storage = multer.diskStorage({
@@ -13,27 +20,27 @@ const storage = multer.diskStorage({
   },
 });
 
-// A filter to allow only specific image types
+// Updated filter to allow both images and PDF files
 function checkFileType(file, cb) {
-  // Allowed extensions
-  const filetypes = /jpeg|jpg|png|gif/;
+  // Allowed extensions - added PDF support
+  const filetypes = /jpeg|jpg|png|gif|pdf/;
   // Check the extension
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  // Check the mime type
-  const mimetype = filetypes.test(file.mimetype);
+  // Check the mime type - added PDF mime type
+  const mimetype = /image\/(jpeg|jpg|png|gif)|application\/pdf/.test(file.mimetype);
 
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb('Error: Images Only!'); // Send an error if the file is not an image
+    cb('Error: Only images (JPEG, JPG, PNG, GIF) and PDF files are allowed!');
   }
 }
 
-// Initialize upload variable
+// Initialize upload variable with increased file size limit for PDFs
 const upload = multer({
   storage: storage,
-  // Set file size limit (e.g., 1MB)
-  limits: { fileSize: 1000000 },
+  // Increased file size limit to 5MB to accommodate PDF files
+  limits: { fileSize: 5000000 }, // 5MB
   fileFilter: function (req, file, cb) {
     checkFileType(file, cb);
   },
