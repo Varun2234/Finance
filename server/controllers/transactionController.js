@@ -11,29 +11,35 @@ const { DocumentAnalysisClient, AzureKeyCredential } = require("@azure/ai-form-r
 // @access  Private
 
 
+// @desc    Get all transactions (with pagination)
+// @route   GET /api/transactions
+// @access  Private
 exports.getTransactions = async (req, res, next) => {
   try {
-    // Extract query parameters for pagination and sorting
-    const { limit, sort } = req.query;
-    
-    // Build the query
-    let query = Transaction.find({ user: req.user.id });
-    
-    // Apply sorting (default to date descending)
-    const sortBy = sort || '-date';
-    query = query.sort(sortBy);
-    
-    // Apply limit if specified
-    if (limit) {
-      query = query.limit(parseInt(limit));
-    }
-    
-    // Execute the query
-    const transactions = await query;
+    // Extract query parameters for pagination, sorting and filtering
+    let { page = 1, limit = 10, sort = '-date' } = req.query;
 
-    return res.status(200).json({
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    // Base query: only the logged-in user’s transactions
+    const query = { user: req.user.id };
+
+    // Count total transactions (for pagination info)
+    const total = await Transaction.countDocuments(query);
+
+    // Fetch transactions with pagination + sorting
+    const transactions = await Transaction.find(query)
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.status(200).json({
       success: true,
       count: transactions.length,
+      page,
+      pages: Math.ceil(total / limit),
+      total,
       data: transactions,
     });
   } catch (err) {

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import TransactionCard from '../components/TransactionCard';
 import { motion } from 'framer-motion';
 
 import {
@@ -17,7 +16,14 @@ import {
   Fab,
   InputAdornment,
   Paper,
-  Chip
+  Chip,
+  Pagination,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -28,7 +34,6 @@ const categories = ["Rent", "Electricity", "Groceries", "Personal Care", "Health
 
 const TransactionsPage = () => {
   const [transactions, setTransactions] = useState([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({
@@ -39,14 +44,26 @@ const TransactionsPage = () => {
     sortOrder: 'desc'
   });
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError('');
-        const res = await api.get('/api/transactions');
+        const res = await api.get('/api/transactions', {
+          params: {
+            page,
+            limit: 10,
+            sort: `${filters.sortOrder === 'desc' ? '-' : ''}${filters.sortBy}`,
+            type: filters.type !== 'all' ? filters.type : undefined,
+            category: filters.category !== 'all' ? filters.category : undefined,
+            search: filters.search || undefined
+          }
+        });
         setTransactions(res.data.data);
-        setFilteredTransactions(res.data.data);
+        setTotalPages(res.data.pages);
       } catch (err) {
         console.error(err);
         setError('Failed to load transactions. Please try again.');
@@ -55,32 +72,12 @@ const TransactionsPage = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [page, filters]);
 
-  useEffect(() => {
-    let filtered = [...transactions];
-    if (filters.type !== 'all') filtered = filtered.filter(t => t.type === filters.type);
-    if (filters.category !== 'all') filtered = filtered.filter(t => t.category === filters.category);
-    if (filters.search) {
-      filtered = filtered.filter(t =>
-        t.description.toLowerCase().includes(filters.search.toLowerCase()) ||
-        t.category.toLowerCase().includes(filters.search.toLowerCase())
-      );
-    }
-    filtered.sort((a, b) => {
-      let comp = 0;
-      switch (filters.sortBy) {
-        case 'date': comp = new Date(a.date) - new Date(b.date); break;
-        case 'amount': comp = a.amount - b.amount; break;
-        case 'category': comp = a.category.localeCompare(b.category); break;
-        default: comp = new Date(a.date) - new Date(b.date);
-      }
-      return filters.sortOrder === 'desc' ? -comp : comp;
-    });
-    setFilteredTransactions(filtered);
-  }, [transactions, filters]);
-
-  const handleFilterChange = (name, value) => setFilters(prev => ({ ...prev, [name]: value }));
+  const handleFilterChange = (name, value) => {
+    setFilters(prev => ({ ...prev, [name]: value }));
+    setPage(1);
+  };
 
   const handleDeleteTransaction = async (id) => {
     if (!window.confirm('Are you sure you want to delete this transaction?')) return;
@@ -94,11 +91,14 @@ const TransactionsPage = () => {
     }
   };
 
-  const clearFilters = () => setFilters({ type: 'all', category: 'all', search: '', sortBy: 'date', sortOrder: 'desc' });
+  const clearFilters = () => {
+    setFilters({ type: 'all', category: 'all', search: '', sortBy: 'date', sortOrder: 'desc' });
+    setPage(1);
+  };
 
-  const totalAmount = filteredTransactions.reduce((sum, t) => t.type === 'income' ? sum + t.amount : sum - t.amount, 0);
-  const totalIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const totalExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const totalAmount = transactions.reduce((sum, t) => t.type === 'income' ? sum + t.amount : sum - t.amount, 0);
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
   const formatCurrency = amount => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
   const activeFiltersCount = Object.entries(filters).filter(([key, val]) => (key !== 'sortBy' && key !== 'sortOrder') && (key === 'search' ? val.trim() !== '' : val !== 'all')).length;
@@ -206,40 +206,78 @@ const TransactionsPage = () => {
         </Grid>
       </Paper>
 
-      {filteredTransactions.length === 0 ? (
+      {transactions.length === 0 ? (
         <Paper sx={{ p: 8, textAlign: 'center' }}>
           <Typography variant="h6" color="text.secondary" gutterBottom sx={{ fontWeight: 600 }}>
-            {transactions.length === 0 ? 'No transactions found' : 'No transactions match your filters'}
+            No transactions found
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            {transactions.length === 0
-              ? 'Start by adding your first transaction to track your finances!'
-              : 'Try adjusting your filters or search terms to find what you\'re looking for.'}
+            Start by adding your first transaction to track your finances!
           </Typography>
-          {transactions.length === 0 && (
-            <Button component={Link} to="/add-transaction" variant="contained" startIcon={<AddIcon />} sx={{ fontWeight: 600 }}>
-              Add Your First Transaction
-            </Button>
-          )}
+          <Button component={Link} to="/add-transaction" variant="contained" startIcon={<AddIcon />} sx={{ fontWeight: 600 }}>
+            Add Your First Transaction
+          </Button>
         </Paper>
       ) : (
         <>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-              Showing {filteredTransactions.length} of {transactions.length} transactions
+              Page {page} of {totalPages}
             </Typography>
             <Typography sx={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.875rem', color: 'text.secondary' }}>
               Net: {formatCurrency(totalAmount)}
             </Typography>
           </Box>
 
-          <Grid container spacing={3}>
-            {filteredTransactions.map(t => (
-              <Grid item xs={12} sm={6} md={4} key={t._id}>
-                <TransactionCard transaction={t} onDelete={handleDeleteTransaction} />
-              </Grid>
-            ))}
-          </Grid>
+          {/* Transactions Table */}
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell><b>Description</b></TableCell>
+                  <TableCell><b>Date</b></TableCell>
+                  <TableCell><b>Category</b></TableCell>
+                  <TableCell><b>Type</b></TableCell>
+                  <TableCell align="right"><b>Amount</b></TableCell>
+                  <TableCell align="center"><b>Actions</b></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {transactions.map(t => (
+                  <TableRow key={t._id}>
+                    <TableCell>{t.description}</TableCell>
+                    <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{t.category}</TableCell>
+                    <TableCell sx={{ color: t.type === 'income' ? 'success.main' : 'error.main', fontWeight: 600 }}>
+                      {t.type}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                      {formatCurrency(t.amount)}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        onClick={() => handleDeleteTransaction(t._id)}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={(e, value) => setPage(value)}
+              color="primary"
+            />
+          </Box>
         </>
       )}
 

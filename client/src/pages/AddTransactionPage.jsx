@@ -25,7 +25,6 @@ const validationSchema = yup.object({
   date: yup.string().required('Date is required'),
 });
 
-// Define the static category list
 const categories = [
   "Rent", 
   "Electricity", 
@@ -36,16 +35,12 @@ const categories = [
   "Others"
 ];
 
-
-// --- Main Component ---
-
 const AddTransactionPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
   const navigate = useNavigate();
 
-  // Setup react-hook-form
   const { 
     control, 
     handleSubmit, 
@@ -100,7 +95,6 @@ const AddTransactionPage = () => {
     }
   };
 
-  // Handle submission of the manual entry form
   const onSubmit = async (data) => {
     setMessage({ type: '', content: '' });
     try {
