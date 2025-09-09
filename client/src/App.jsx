@@ -25,7 +25,10 @@ import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute.jsx';
 function AppLayout() {
   return (
     <ProtectedRoute>
-      <div>
+      <div style={{ 
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #E1BEE7 0%, #F8BBD9 25%, #FFB3D1 50%, #E1BEE7 75%, #D8BFD8 100%)'
+      }}>
         <Navbar />
         <main>
           <Outlet />
@@ -43,10 +46,7 @@ function App() {
     <Routes>
       {/* Main Application Routes (with Navbar and Authentication) */}
       <Route element={<AppLayout />}>
-        {/* Default route for the application */}
-        {/* <Route path="/" element={<Navigate to="/dashboard" replace />} />x */}
         <Route path="/" element={<HomePage />} />
-        {/* Protected main application pages */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/add-transaction" element={<AddTransactionPage />} />

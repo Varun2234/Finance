@@ -48,31 +48,32 @@ const TransactionsPage = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const res = await api.get('/api/transactions', {
-          params: {
-            page,
-            limit: 10,
-            sort: `${filters.sortOrder === 'desc' ? '-' : ''}${filters.sortBy}`,
-            type: filters.type !== 'all' ? filters.type : undefined,
-            category: filters.category !== 'all' ? filters.category : undefined,
-            search: filters.search || undefined
-          }
-        });
-        setTransactions(res.data.data);
-        setTotalPages(res.data.pages);
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load transactions. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [page, filters]);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const params = {
+        page,
+        limit: 10,
+        sort: `${filters.sortOrder === 'desc' ? '-' : ''}${filters.sortBy}`,
+      };
+      if (filters.type !== 'all') params.type = filters.type;
+      if (filters.category !== 'all') params.category = filters.category;
+      if (filters.search.trim() !== '') params.search = filters.search;
+
+      const res = await api.get('/api/transactions', { params });
+      setTransactions(res.data.data);
+      setTotalPages(res.data.pages);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load transactions. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchData();
+}, [page, filters]);
+
 
   const handleFilterChange = (name, value) => {
     setFilters(prev => ({ ...prev, [name]: value }));
