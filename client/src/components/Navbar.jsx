@@ -20,23 +20,22 @@ import Logout from '@mui/icons-material/Logout';
 import FinanceIcon from '@mui/icons-material/MonetizationOn';
 
 const navLinkStyle = ({ isActive }) => ({
-  fontWeight: isActive ? '600' : '500',
+  fontWeight: isActive ? 600 : 550,
   fontFamily: 'Inter, sans-serif',
   color: 'white',
   textDecoration: 'none',
   padding: '8px 16px',
   borderRadius: '12px',
-  backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+  backgroundColor: isActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
   transition: 'all 0.3s ease',
   '&:hover': {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     transform: 'translateY(-1px)',
   },
 });
 
 const Navbar = () => {
   const navigate = useNavigate();
-
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
@@ -49,11 +48,11 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar 
-      position="static" 
-      sx={{ 
-        background: 'linear-gradient(135deg, #8B5A96 0%, #9966CC 50%, #B19CD9 100%)',
-        boxShadow: '0 4px 20px rgba(139, 90, 150, 0.3)',
+    <AppBar
+      position="static"
+      sx={{
+        background: 'linear-gradient(135deg, #0D1B2A 0%, #1C3144 100%)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
         backdropFilter: 'blur(10px)',
       }}
     >
@@ -65,8 +64,8 @@ const Navbar = () => {
           sx={{
             flexGrow: 1,
             fontFamily: 'Inter, sans-serif',
-            fontWeight: 700,
-            background: 'linear-gradient(45deg, #FFFFFF 30%, #00D4AA 90%)',
+            fontWeight: 800,
+            background: 'linear-gradient(45deg, #00D4AA 30%, #66FCF1 90%)',
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             color: 'transparent',
@@ -94,38 +93,43 @@ const Navbar = () => {
                 Analytics
               </Button>
             </Box>
-            
-            <Typography sx={{ 
-              display: { xs: 'none', sm: 'block' }, 
-              mr: 2,
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 500,
-              color: 'rgba(255, 255, 255, 0.9)'
-            }}>
+
+            <Typography
+              sx={{
+                display: { xs: 'none', sm: 'block' },
+                mr: 2,
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 600,
+                color: 'rgba(255, 255, 255, 0.9)',
+              }}
+            >
               Hello, {user?.name || 'User'}
             </Typography>
 
-            <Avatar sx={{ 
-              bgcolor: '#00D4AA', 
-              width: 40, 
-              height: 40, 
-              mr: 2,
-              boxShadow: '0 2px 8px rgba(0, 212, 170, 0.3)'
-            }}>
+            <Avatar
+              sx={{
+                bgcolor: '#00D4AA',
+                width: 40,
+                height: 40,
+                mr: 2,
+                boxShadow: '0 2px 8px rgba(0, 212, 170, 0.3)',
+              }}
+            >
               <AccountCircle sx={{ color: 'white' }} />
             </Avatar>
+
             <Tooltip title="Logout">
-              <IconButton 
-                color="inherit" 
-                onClick={handleLogout} 
+              <IconButton
+                color="inherit"
+                onClick={handleLogout}
                 edge="end"
                 sx={{
-                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  bgcolor: 'rgba(255, 255, 255, 0.05)',
                   '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    transform: 'scale(1.05)'
+                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                    transform: 'scale(1.05)',
                   },
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
                 }}
               >
                 <Logout />
@@ -134,32 +138,32 @@ const Navbar = () => {
           </Box>
         ) : (
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button 
-              color="inherit" 
-              component={NavLink} 
-              to="/login" 
+            <Button
+              color="inherit"
+              component={NavLink}
+              to="/login"
               sx={{
                 fontFamily: 'Inter, sans-serif',
-                fontWeight: 500,
+                fontWeight: 600,
                 px: 3,
                 py: 1,
                 borderRadius: '25px',
                 transition: 'all 0.3s ease',
                 '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.1)',
-                  transform: 'translateY(-2px)'
-                }
+                  bgcolor: 'rgba(255, 255, 255, 0.05)',
+                  transform: 'translateY(-2px)',
+                },
               }}
             >
               Login
             </Button>
-            <Button 
+            <Button
               variant="contained"
-              component={NavLink} 
-              to="/signup" 
+              component={NavLink}
+              to="/signup"
               sx={{
                 fontFamily: 'Inter, sans-serif',
-                fontWeight: 600,
+                fontWeight: 700,
                 px: 3,
                 py: 1,
                 borderRadius: '25px',
@@ -169,8 +173,8 @@ const Navbar = () => {
                 '&:hover': {
                   bgcolor: '#00C49F',
                   transform: 'translateY(-2px)',
-                  boxShadow: '0 4px 12px rgba(0, 212, 170, 0.4)'
-                }
+                  boxShadow: '0 4px 12px rgba(0, 212, 170, 0.4)',
+                },
               }}
             >
               Sign Up

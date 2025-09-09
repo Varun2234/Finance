@@ -2,23 +2,35 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import api from "../services/api";
 
-import { Container, Grid, Card, CardContent, Typography, Box, Avatar, Divider } from "@mui/material";
-import { TrendingUp, TrendingDown, AttachMoney } from '@mui/icons-material';
+import { Container, Grid, Card, Typography, Box, Divider } from "@mui/material";
 
-const StatCard = ({ title, value, icon: Icon, color }) => (
+const StatCard = ({ title, value, bgcolor, textColor }) => (
   <motion.div
     initial={{ opacity: 0, y: 30 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5 }}
   >
-    <Card sx={{ display: 'flex', alignItems: 'center', p: 2, mb: 2, bgcolor: `background.paper`, boxShadow: 3, '&:hover': { transform: 'scale(1.05)', transition: '0.3s' }}}>
-      <Avatar sx={{ bgcolor: color, width: 56, height: 56, mr: 2 }}>
-        <Icon />
-      </Avatar>
-      <Box>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ fontFamily: 'Inter, sans-serif' }}>{title}</Typography>
-        <Typography variant="h5" component="div" fontWeight="bold" sx={{ fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.02em' }}>{value}</Typography>
-      </Box>
+    <Card 
+      sx={{ 
+        p: 2, 
+        mb: 2, 
+        bgcolor: bgcolor, 
+        boxShadow: 3, 
+        borderRadius: 2,
+        textAlign: 'center'
+      }}
+    >
+      <Typography variant="h6" sx={{ fontFamily: 'Inter, sans-serif', color: textColor, mb: 1 }}>
+        {title}
+      </Typography>
+      <Typography 
+        variant="h4" 
+        component="div" 
+        fontWeight="bold" 
+        sx={{ fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.02em', color: textColor }}
+      >
+        {value}
+      </Typography>
     </Card>
   </motion.div>
 );
@@ -70,41 +82,68 @@ export default function Dashboard() {
     }).format(amount);
   };
 
+  const netBalanceColor = summary.netIncome >= 0 ? '#4caf50' : '#f44336';
+
   return (
-  <Box sx={{ bgcolor: '#C1EEFF', minHeight: '100vh', py: 4 }}>
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <Typography
-          variant="h4"
-          gutterBottom
-          component="h1"
-          sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}
+    <Box sx={{ 
+      minHeight: '100vh', 
+      py: 4, 
+      px: 2,
+      backgroundImage: 'linear-gradient(to bottom right, #A78BFA, #E5E7EB)'
+    }}>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
         >
-          Dashboard
-        </Typography>
-      </motion.div>
+          <Typography
+            variant="h4"
+            gutterBottom
+            component="h1"
+            sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}
+          >
+            Dashboard
+          </Typography>
+        </motion.div>
 
+        <Grid container spacing={3} mb={4}>
+          <Grid item xs={12} md={4}>
+            <StatCard 
+              title="Total Income" 
+              value={formatCurrency(summary.totalIncome)} 
+              bgcolor="#4caf50" 
+              textColor="white" 
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <StatCard 
+              title="Total Expenses" 
+              value={formatCurrency(summary.totalExpense)} 
+              bgcolor="#f44336" 
+              textColor="white" 
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <StatCard 
+              title="Total Balance" 
+              value={formatCurrency(summary.netIncome)} 
+              bgcolor={netBalanceColor} 
+              textColor="white" 
+            />
+          </Grid>
+        </Grid>
 
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} md={4}>
-          <StatCard title="Total Income" value={formatCurrency(summary.totalIncome)} icon={TrendingUp} color="#4caf50" />
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <StatCard title="Total Expense" value={formatCurrency(summary.totalExpense)} icon={TrendingDown} color="#f44336" />
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <StatCard title="Net Balance" value={formatCurrency(summary.netIncome)} icon={AttachMoney} color="#2196f3" />
-        </Grid>
-      </Grid>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-        <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
-          <CardContent>
-            <Typography variant="h6" component="h2" gutterBottom sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Expense Breakdown</Typography>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+          <Card sx={{ 
+            boxShadow: 3, 
+            borderRadius: 2, 
+            bgcolor: 'background.paper',
+            p: 2
+          }}>
+            <Typography variant="h6" component="h2" gutterBottom sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>
+              Expense Breakdown
+            </Typography>
             {loading ? (
               <Typography sx={{ fontFamily: 'Inter, sans-serif', color: 'text.secondary' }}>Loading...</Typography>
             ) : Object.keys(summary.expenseCategories).length > 0 ? (
@@ -122,10 +161,9 @@ export default function Dashboard() {
             ) : (
               <Typography color="text.secondary" sx={{ mt: 2, fontFamily: 'Inter, sans-serif' }}>No expenses recorded yet.</Typography>
             )}
-          </CardContent>
-        </Card>
-      </motion.div>
-    </Container>
+          </Card>
+        </motion.div>
+      </Container>
     </Box>
   );
 }
