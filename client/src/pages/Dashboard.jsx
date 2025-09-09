@@ -30,10 +30,15 @@ const StatCard = ({ title, value, icon, color }) => (
       {icon}
     </Avatar>
     <Box>
-      <Typography variant="subtitle2" color="text.secondary">
+      <Typography variant="subtitle2" color="text.secondary" sx={{
+        fontFamily: 'Inter, sans-serif'
+      }}>
         {title}
       </Typography>
-      <Typography variant="h5" component="div" fontWeight="bold">
+      <Typography variant="h5" component="div" fontWeight="bold" sx={{
+        fontFamily: 'JetBrains Mono, monospace',
+        letterSpacing: '0.02em'
+      }}>
         {value}
       </Typography>
     </Box>
@@ -95,7 +100,10 @@ export default function Dashboard() {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom component="h1">
+      <Typography variant="h4" gutterBottom component="h1" sx={{
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: 600
+      }}>
         Dashboard
       </Typography>
       
@@ -132,11 +140,14 @@ export default function Dashboard() {
         <Grid item xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" component="h2" gutterBottom>
+              <Typography variant="h6" component="h2" gutterBottom sx={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 600
+              }}>
                 Expense Breakdown
               </Typography>
               {loading ? (
-                <Typography>Loading...</Typography>
+                <Typography sx={{ fontFamily: 'Inter, sans-serif' }}>Loading...</Typography>
               ) : Object.keys(summary.expenseCategories).length > 0 ? (
                 <List disablePadding>
                   {Object.entries(summary.expenseCategories)
@@ -145,9 +156,17 @@ export default function Dashboard() {
                       <React.Fragment key={category}>
                         <ListItem>
                           <ListItemText 
-                            primary={category} 
+                            primary={category}
+                            sx={{
+                              '& .MuiListItemText-primary': {
+                                fontFamily: 'Inter, sans-serif'
+                              }
+                            }}
                           />
-                          <Typography variant="body1" fontWeight="medium">
+                          <Typography variant="body1" fontWeight="medium" sx={{
+                            fontFamily: 'JetBrains Mono, monospace',
+                            letterSpacing: '0.02em'
+                          }}>
                             {formatCurrency(amount)}
                           </Typography>
                         </ListItem>
@@ -156,7 +175,10 @@ export default function Dashboard() {
                     ))}
                 </List>
               ) : (
-                <Typography color="text.secondary" sx={{ mt: 2 }}>
+                <Typography color="text.secondary" sx={{ 
+                  mt: 2,
+                  fontFamily: 'Inter, sans-serif'
+                }}>
                   No expenses have been recorded yet.
                 </Typography>
               )}

@@ -56,14 +56,22 @@ const formatCurrency = (amount) => {
 const StatCard = ({ title, value, color, percentage }) => (
   <Card sx={{ height: '100%' }}>
     <CardContent sx={{ textAlign: 'center', py: 3 }}>
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+      <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{
+        fontFamily: 'Inter, sans-serif'
+      }}>
         {title}
       </Typography>
-      <Typography variant="h4" component="div" fontWeight="bold" color={`${color}.main`} sx={{ mb: 1 }}>
+      <Typography variant="h4" component="div" fontWeight="bold" color={`${color}.main`} sx={{ 
+        mb: 1,
+        fontFamily: 'JetBrains Mono, monospace',
+        letterSpacing: '0.02em'
+      }}>
         {value}
       </Typography>
       {percentage && (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{
+          fontFamily: 'Inter, sans-serif'
+        }}>
           {percentage}
         </Typography>
       )}
@@ -174,7 +182,10 @@ const AnalyticsPage = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom component="h1">
+      <Typography variant="h4" gutterBottom component="h1" sx={{
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: 600
+      }}>
         Financial Analytics
       </Typography>
 
@@ -204,7 +215,10 @@ const AnalyticsPage = () => {
             />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Button variant="contained" onClick={applyFilters} fullWidth>
+            <Button variant="contained" onClick={applyFilters} fullWidth sx={{
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 500
+            }}>
               APPLY FILTERS
             </Button>
           </Grid>
@@ -241,7 +255,12 @@ const AnalyticsPage = () => {
         {/* Expense Category Breakdown (Pie Chart) */}
         <Grid item xs={12} lg={6}>
           <Paper sx={{ p: 3, height: 400 }}>
-            <Typography variant="h6" gutterBottom>Expense Breakdown</Typography>
+            <Typography variant="h6" gutterBottom sx={{
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 600
+            }}>
+              Expense Breakdown
+            </Typography>
             {pieChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="85%">
                 <PieChart>
@@ -264,7 +283,13 @@ const AnalyticsPage = () => {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <Typography sx={{ textAlign: 'center', pt: 10 }}>No expense data for this period.</Typography>
+              <Typography sx={{ 
+                textAlign: 'center', 
+                pt: 10,
+                fontFamily: 'Inter, sans-serif'
+              }}>
+                No expense data for this period.
+              </Typography>
             )}
           </Paper>
         </Grid>
@@ -272,7 +297,12 @@ const AnalyticsPage = () => {
         {/* Monthly Trends (Bar Chart) */}
         <Grid item xs={12} lg={6}>
           <Paper sx={{ p: 3, height: 400 }}>
-            <Typography variant="h6" gutterBottom>Monthly Income vs. Expense</Typography>
+            <Typography variant="h6" gutterBottom sx={{
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 600
+            }}>
+              Monthly Income vs. Expense
+            </Typography>
             {barChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="85%">
                 <BarChart data={barChartData}>
@@ -286,7 +316,13 @@ const AnalyticsPage = () => {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <Typography sx={{ textAlign: 'center', pt: 10 }}>No monthly data available for this period.</Typography>
+              <Typography sx={{ 
+                textAlign: 'center', 
+                pt: 10,
+                fontFamily: 'Inter, sans-serif'
+              }}>
+                No monthly data available for this period.
+              </Typography>
             )}
           </Paper>
         </Grid>
@@ -294,27 +330,34 @@ const AnalyticsPage = () => {
 
       {/* Recent Transactions Table */}
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>Recent Transactions</Typography>
+        <Typography variant="h6" gutterBottom sx={{
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 600
+        }}>
+          Recent Transactions
+        </Typography>
         {recentTransactions && recentTransactions.length > 0 ? (
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell align="right">Amount</TableCell>
+                  <TableCell sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Date</TableCell>
+                  <TableCell sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Description</TableCell>
+                  <TableCell sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Category</TableCell>
+                  <TableCell align="right" sx={{ fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Amount</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {recentTransactions.slice(0, 5).map((transaction) => (
                   <TableRow key={transaction._id}>
-                    <TableCell>{formatDate(transaction.date)}</TableCell>
-                    <TableCell>{transaction.description}</TableCell>
-                    <TableCell>{transaction.category}</TableCell>
+                    <TableCell sx={{ fontFamily: 'Inter, sans-serif' }}>{formatDate(transaction.date)}</TableCell>
+                    <TableCell sx={{ fontFamily: 'Inter, sans-serif' }}>{transaction.description}</TableCell>
+                    <TableCell sx={{ fontFamily: 'Inter, sans-serif' }}>{transaction.category}</TableCell>
                     <TableCell align="right" sx={{ 
                       color: transaction.type === 'income' ? 'success.main' : 'error.main',
-                      fontWeight: 'medium'
+                      fontWeight: 'medium',
+                      fontFamily: 'JetBrains Mono, monospace',
+                      letterSpacing: '0.02em'
                     }}>
                       {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                     </TableCell>
@@ -325,10 +368,15 @@ const AnalyticsPage = () => {
           </TableContainer>
         ) : (
           <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant="body1" color="text.secondary" sx={{
+              fontFamily: 'Inter, sans-serif'
+            }}>
               Recent transactions will appear here once you have transaction data.
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ 
+              mt: 1,
+              fontFamily: 'Inter, sans-serif'
+            }}>
               Add some transactions to see your recent activity!
             </Typography>
           </Box>

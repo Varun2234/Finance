@@ -23,7 +23,7 @@ import {
 // MUI Icons
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
-// 1. Define the validation schema based on backend requirements
+// Define the validation schema based on backend requirements
 const validationSchema = yup.object({
   type: yup.string().oneOf(['income', 'expense']).required('Type is required'),
   amount: yup.number().typeError('Amount must be a number').positive('Amount must be positive').required('Amount is required'),
@@ -32,7 +32,7 @@ const validationSchema = yup.object({
   date: yup.string().required('Date is required'),
 });
 
-// *** MODIFICATION: Define the static category list ***
+// Define the static category list
 const categories = [
   "Rent", 
   "Electricity", 
@@ -44,13 +44,12 @@ const categories = [
 ];
 
 const AddTransactionPage = () => {
-  // *** MODIFICATION: Removed useState for categories ***
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
   const navigate = useNavigate();
 
-  // 2. Setup react-hook-form
+  // Setup react-hook-form
   const { 
     control, 
     handleSubmit, 
@@ -61,19 +60,17 @@ const AddTransactionPage = () => {
     defaultValues: {
       type: 'expense',
       amount: '',
-      category: categories[0], // *** MODIFICATION: Set default from static list ***
+      category: categories[0],
       description: '',
       date: new Date().toISOString().split('T')[0], 
     }
   });
 
-  // *** MODIFICATION: Removed the useEffect hook that fetched categories ***
-
   const handleFileChange = (e) => {
     setSelectedFile(e.target.files[0]);
   };
 
-  // 4. Handle uploading a receipt file
+  // Handle uploading a receipt file
   const handleReceiptUpload = async () => {
     if (!selectedFile) {
       setMessage({ type: 'error', content: 'Please select a file to upload.' });
@@ -93,7 +90,6 @@ const AddTransactionPage = () => {
       reset({
         type: 'expense', // Receipts are almost always expenses
         amount: data.extractedData.amount || '',
-        // *** MODIFICATION: Check against static list ***
         category: categories.includes(data.extractedData.category) ? data.extractedData.category : categories[0],
         description: data.extractedData.description || '',
         date: data.extractedData.date || new Date().toISOString().split('T')[0],
@@ -108,7 +104,7 @@ const AddTransactionPage = () => {
     }
   };
 
-  // 5. Handle submission of the manual entry form
+  // Handle submission of the manual entry form
   const onSubmit = async (data) => {
     setMessage({ type: '', content: '' });
     try {
@@ -126,7 +122,10 @@ const AddTransactionPage = () => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom component="h1">
+      <Typography variant="h4" gutterBottom component="h1" sx={{
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: 600
+      }}>
         Add New Transaction
       </Typography>
 
@@ -139,13 +138,22 @@ const AddTransactionPage = () => {
 
       {/* Upload Receipt Section */}
       <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h6" gutterBottom>Add from Receipt</Typography>
+        <Typography variant="h6" gutterBottom sx={{
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 600
+        }}>
+          Add from Receipt
+        </Typography>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={8}>
             <Button
               variant="outlined"
               component="label"
               fullWidth
+              sx={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 500
+              }}
             >
               {selectedFile ? selectedFile.name : "Choose a file..."}
               <input type="file" hidden onChange={handleFileChange} accept=".jpg,.jpeg,.png,.pdf" />
@@ -158,6 +166,10 @@ const AddTransactionPage = () => {
               disabled={uploadLoading || !selectedFile}
               startIcon={uploadLoading ? <CircularProgress size={20} color="inherit" /> : <CloudUploadIcon />}
               fullWidth
+              sx={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 500
+              }}
             >
               Upload
             </Button>
@@ -167,7 +179,12 @@ const AddTransactionPage = () => {
 
       {/* Manual Entry Form */}
       <Paper elevation={2} sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>Manual Entry</Typography>
+        <Typography variant="h6" gutterBottom sx={{
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 600
+        }}>
+          Manual Entry
+        </Typography>
         <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
@@ -207,7 +224,6 @@ const AddTransactionPage = () => {
                 control={control}
                 render={({ field }) => (
                   <TextField {...field} select label="Category" fullWidth error={!!errors.category} helperText={errors.category?.message}>
-                    {/* *** MODIFICATION: Mapped over static list *** */}
                     {categories.map(cat => (
                       <MenuItem key={cat} value={cat}>{cat}</MenuItem>
                     ))}
@@ -240,7 +256,11 @@ const AddTransactionPage = () => {
                 color="primary"
                 disabled={isSubmitting}
                 fullWidth
-                sx={{ py: 1.5 }}
+                sx={{ 
+                  py: 1.5,
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 500
+                }}
               >
                 {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Save Transaction'}
               </Button>

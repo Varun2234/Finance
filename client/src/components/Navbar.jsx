@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-// import { shallow } from 'zustand/shallow'; // <-- 1. IMPORT shallow
 
 // MUI Components
 import {
@@ -21,7 +20,8 @@ import Logout from '@mui/icons-material/Logout';
 import FinanceIcon from '@mui/icons-material/MonetizationOn';
 
 const navLinkStyle = ({ isActive }) => ({
-  fontWeight: isActive ? '700' : '500',
+  fontWeight: isActive ? '600' : '500',
+  fontFamily: 'Inter, sans-serif',
   color: 'white',
   textDecoration: 'none',
   padding: '6px 12px',
@@ -35,8 +35,6 @@ const navLinkStyle = ({ isActive }) => ({
 const Navbar = () => {
   const navigate = useNavigate();
 
-  // 2. USE shallow as the second argument to the hook.
-  // This prevents re-renders if the selected state values haven't changed.
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
@@ -52,7 +50,11 @@ const Navbar = () => {
     <AppBar position="static">
       <Toolbar>
         <FinanceIcon sx={{ mr: 1 }} />
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+        <Typography variant="h6" component="div" sx={{ 
+          flexGrow: 1,
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: 600
+        }}>
           MyFinance
         </Typography>
 
@@ -73,11 +75,14 @@ const Navbar = () => {
               </Button>
             </Box>
             
-            {/* *** THIS IS THE UPDATED LINE *** */}
-            <Typography sx={{ display: { xs: 'none', sm: 'block' }, mr: 1.5 }}>
+            <Typography sx={{ 
+              display: { xs: 'none', sm: 'block' }, 
+              mr: 1.5,
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 500
+            }}>
               Hello, {user.name}
             </Typography>
-            {/* *** END OF UPDATE *** */}
 
             <Avatar sx={{ bgcolor: 'secondary.main', width: 36, height: 36, mr: 1.5 }}>
               <AccountCircle />
@@ -90,10 +95,16 @@ const Navbar = () => {
           </Box>
         ) : (
           <Box>
-            <Button color="inherit" component={NavLink} to="/login">
+            <Button color="inherit" component={NavLink} to="/login" sx={{
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 500
+            }}>
               Login
             </Button>
-            <Button color="inherit" component={NavLink} to="/signup">
+            <Button color="inherit" component={NavLink} to="/signup" sx={{
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 500
+            }}>
               Sign Up
             </Button>
           </Box>

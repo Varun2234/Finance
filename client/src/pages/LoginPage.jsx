@@ -92,11 +92,11 @@ const LoginPage = () => {
             <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
               <LockOutlinedIcon />
             </Avatar>
-            <Typography component="h1" variant="h4" gutterBottom>
+            <Typography component="h1" variant="h3" gutterBottom sx={{ fontWeight: 700 }}>
               MyFinance
             </Typography>
-            <Typography component="h2" variant="h5" sx={{ mb: 2 }}>
-              Sign in
+            <Typography component="h2" variant="h5" sx={{ mb: 3, color: 'text.secondary' }}>
+              Welcome back
             </Typography>
             
             <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1, width: '100%' }}>
@@ -116,6 +116,7 @@ const LoginPage = () => {
                     autoFocus
                     error={!!errors.email}
                     helperText={errors.email?.message}
+                    sx={{ mb: 2 }}
                   />
                 )}
               />
@@ -136,6 +137,7 @@ const LoginPage = () => {
                     autoComplete="current-password"
                     error={!!errors.password}
                     helperText={errors.password?.message}
+                    sx={{ mb: 2 }}
                   />
                 )}
               />
@@ -152,7 +154,13 @@ const LoginPage = () => {
                 fullWidth
                 variant="contained"
                 disabled={isSubmitting}
-                sx={{ mt: 3, mb: 2, py: 1.5 }}
+                sx={{ 
+                  mt: 3, 
+                  mb: 2, 
+                  py: 1.5,
+                  fontWeight: 600,
+                  fontSize: '1rem'
+                }}
               >
                 {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
               </Button>
@@ -160,7 +168,7 @@ const LoginPage = () => {
               <Grid container justifyContent="center">
                 <Grid item>
                   <Link to="/signup" style={{ textDecoration: 'none' }}>
-                    <Typography variant="body2" color="primary">
+                    <Typography variant="body2" color="primary" sx={{ fontWeight: 500 }}>
                       {"Don't have an account? Sign Up"}
                     </Typography>
                   </Link>
